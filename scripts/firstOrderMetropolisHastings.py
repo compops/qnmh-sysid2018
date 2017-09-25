@@ -22,23 +22,27 @@ def run():
 
     # Kalman filter
     kalman = kalmanMethods.FilteringSmoothing()
-    kalman.settings['initialState'] = systemModel.initialState
-    kalman.settings['initialCovariance'] = 1e-5
-
+    kalmanSettings = {'initialState': systemModel.initialState,
+                      'initialCovariance': 1e-5,
+                      'estimateGradients': True,
+                      'estimateHessians': False
+    }
+    kalman.settings = kalmanSettings
+    
     # Metropolis-Hastings
-    stepSize = 2.562 / np.sqrt(3)
+    stepSize = 0.01 * 1.125 / np.sqrt(3.0**(1.0 / 3.0))
     posteriorCovariance = np.array((0.00013185, 0.00071256, 0.0006298,
                                     0.00071256, 0.0049845,  0.00460153,
                                     0.0006298,  0.00460153, 0.00439571)).reshape((3,3))
-    settings = {'noIters': 5000, 
-                'noBurnInIters': 1000, 
-                'stepSize': stepSize, 
-                'initialParameters': (0.0, 0.0, 0.5), 
-                'hessianEstimate': posteriorCovariance,
-                'verbose': False,
-                'printWarningsForUnstableSystems': False
-                }
-    mhSampler = metropolisHastings.ParameterEstimator(settings)
-    mhSampler.run(kalman, inferenceModel, 'mh0')
+    mhSettings = {'noIters': 1000, 
+                  'noBurnInIters': 200, 
+                  'stepSize': stepSize, 
+                  'initialParameters': (0.0, 0.0, 0.5), 
+                  'hessianEstimate': posteriorCovariance,
+                  'verbose': False,
+                  'printWarningsForUnstableSystems': False
+                  }
+    mhSampler = metropolisHastings.ParameterEstimator(mhSettings)
+    mhSampler.run(kalman, inferenceModel, 'mh1')
     mhSampler.plot()
 

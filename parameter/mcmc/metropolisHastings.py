@@ -18,11 +18,16 @@ class ParameterEstimator(object):
             self.parameterEstimatorType = "Zero-order Metropolis-Hastings with Kalman methods"
             import parameter.mcmc.zeroOrder as samplingHelpers
 
+        if samplerType is 'mh1':
+            self.parameterEstimatorType = "First-order Metropolis-Hastings with Kalman methods"
+            import parameter.mcmc.firstOrder as samplingHelpers
+
         print("Sampling from the parameter posterior using: " + self.parameterEstimatorType)
         samplingHelpers.checkSettings(self)
 
         self.settings['noParametersToEstimate'] = model.noParametersToEstimate
         self.settings['noObservations'] = model.noObservations
+        self.settings['parametersToEstimate'] = model.parametersToEstimate
 
         noIters = self.settings['noIters']
         noBurnInIters = self.settings['noBurnInIters']
@@ -38,7 +43,9 @@ class ParameterEstimator(object):
         self.accepted = np.zeros((noIters, 1))
         
         self.gradient = np.zeros((noIters, noParametersToEstimate))
+        self.proposedGradient = np.zeros((noParametersToEstimate))
         self.hessian = np.zeros((noIters, noParametersToEstimate, noParametersToEstimate))
+        self.proposedHessian = np.zeros((noParametersToEstimate, noParametersToEstimate))
 
         samplingHelpers.initialiseParameters(self, stateEstimator, model)
 
@@ -66,7 +73,7 @@ class ParameterEstimator(object):
         self.results.update({'parameterTrace': self.parameters[noBurnInIters:noIters, :]})
 
     def plot(self):
-        helpers.plotResults(self, model)
+        helpers.plotResults(self)
 
     def acceptParameters(self):
         iteration = self.currentIteration
@@ -74,6 +81,7 @@ class ParameterEstimator(object):
         self.logPrior[iteration, :] = self.proposedLogPrior
         self.logLikelihood[iteration, :] = self.proposedLogLikelihood
         self.states[iteration, :] = self.proposedStates
+        self.gradient[iteration, :] = self.proposedGradient
         self.acceptProb[iteration, :] = self.currentAcceptanceProbability
         self.accepted[iteration] = 1.0
 
@@ -83,5 +91,6 @@ class ParameterEstimator(object):
         self.logPrior[iteration, :] = self.logPrior[iteration - 1, :]
         self.logLikelihood[iteration, :] = self.logLikelihood[iteration - 1, :]
         self.states[iteration, :] = self.states[iteration - 1, :]
+        self.gradient[iteration, :] = self.gradient[iteration - 1, :]
         self.acceptProb[iteration, :] = self.acceptProb[iteration - 1, :]
         self.accepted[iteration] = 0.0

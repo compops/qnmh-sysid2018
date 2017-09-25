@@ -2,6 +2,7 @@ import numpy as np
 import os
 from scipy.special import gammaln
 import matplotlib.pylab as plt
+from palettable.colorbrewer.qualitative import Dark2_8
 
 def checkSettingsHelper(sampler):
     if not 'noIters' in sampler.settings:
@@ -82,19 +83,20 @@ def invlogit(x):
 
 
 
-def plotResults(sampler, model):
-    noParameters = model.noParametersToEstimate
+def plotResults(sampler):
     noBins = int(np.floor(np.sqrt(len(sampler.results['parameterTrace'][:, 0]))))
-    parameterNames = model.parametersToEstimate
+    noParameters = sampler.settings['noParametersToEstimate']
+    parameterNames = sampler.settings['parametersToEstimate']
 
     plt.figure()
     for i in range(noParameters):
         plt.subplot(noParameters, 2, 2 * i + 1)
-        plt.hist(sampler.results['parameterTrace'][:, i], bins=noBins)
+        plt.hist(sampler.results['parameterTrace'][:, i], bins=noBins, color = Dark2_8.mpl_colors[i])
         plt.ylabel("Marginal posterior probability")
         plt.xlabel(parameterNames[i])
         plt.subplot(noParameters, 2, 2 * i + 2)
-        plt.plot(sampler.results['parameterTrace'][:, i])
+        plt.plot(sampler.results['parameterTrace'][:, i], color = Dark2_8.mpl_colors[i])
         plt.ylabel("Parameter trace")
         plt.xlabel(parameterNames[i])
     plt.show()
+
