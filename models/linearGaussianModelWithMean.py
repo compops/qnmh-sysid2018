@@ -47,7 +47,11 @@ class model(object):
         prior.update({'phi': normalLogPDF(self.parameters['phi'], self.prior['phi'][0], self.prior['phi'][1])})
         prior.update({'sigma_v': gammaLogPDF(self.parameters['sigma_v'], a=self.prior['sigma_v'][0], b=self.prior['sigma_v'][1])})
         prior.update({'sigma_e': gammaLogPDF(self.parameters['sigma_e'], a=self.prior['sigma_e'][0], b=self.prior['sigma_e'][1])})
-        return(prior)
+        priorVector = [prior[item] for item in prior]
+
+        if self.modelType is "Inference model":
+            priorVector = priorVector[self.parametersToEstimateIndex]
+        return(prior, np.sum(priorVector))
     
     def gradientLogPrior(self):
         gradient = {}
@@ -77,6 +81,6 @@ class model(object):
 
     # Define standard methods for the model struct
     storeParameters = template_storeParameters
-    returnParameters = template_returnParameters
+
     generateData = template_generateData
     importData = template_importData

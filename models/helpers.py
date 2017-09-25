@@ -7,27 +7,23 @@ def getInferenceModel(oldModel, parametersToEstimate):
     newModel.modelType = "Inference model"
     newModel.noParametersToEstimate = len(parametersToEstimate)
     newModel.parametersToEstimate = parametersToEstimate
+    newModel.trueParameters = oldModel.parameters
     
     newModel.parametersToEstimateIndex = []
-    for parameter in newModel.parameters.keys():
-        if parameter in parametersToEstimate:
-            newModel.parametersToEstimateIndex.append(parametersToEstimate.index(parameter))
+    for param in newModel.parameters.keys():
+        if param in parametersToEstimate:
+            newModel.parametersToEstimateIndex.append(parametersToEstimate.index(param))
     return(newModel)
 
-
 # Store the parameters into the struct
-def template_storeParameters(inferenceModel, newParameters, completeModel):
-    inferenceModel.par = np.zeros(completeModel.noParameters)
-
-    for k in range(0, inferenceModel.noParametersToEstimate):
-        inferenceModel.par[k] = np.array(newParameters[k], copy=True)
-
-    for k in range(inferenceModel.noParametersToEstimate, completeModel.noParameters):
-        inferenceModel.par[k] = completeModel.par[k]
-
-# Returns the current parameters stored in this struct
-def template_returnParameters(model):
-    return(model.parameters[0:model.noParametersToEstimate])
+def template_storeParameters(model, newParameters):
+    model.parameters = model.trueParameters
+    if isinstance(newParameters, float):
+        for param in model.parametersToEstimate:
+            model.parameters[param] = newParameters
+    else:
+        for param in model.parametersToEstimate:
+            model.parameters[param] = newParameters[model.parametersToEstimate.index(param)]
 
 # Standard template for importing data
 def template_importData(model, fileName):
