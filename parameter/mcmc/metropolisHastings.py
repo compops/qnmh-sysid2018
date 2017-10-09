@@ -22,6 +22,14 @@ class ParameterEstimator(object):
             self.parameterEstimatorType = "First-order Metropolis-Hastings with Kalman methods"
             import parameter.mcmc.firstOrder as samplingHelpers
 
+        if samplerType is 'mh2':
+            self.parameterEstimatorType = "Second-order Metropolis-Hastings with Kalman methods"
+            import parameter.mcmc.secondOrder as samplingHelpers
+
+        if samplerType is 'qmh':
+            self.parameterEstimatorType = "Second-order Metropolis-Hastings using L-BFGS with Kalman methods"
+            import parameter.mcmc.quasiNewtonBFGS as samplingHelpers            
+
         print("Sampling from the parameter posterior using: " + self.parameterEstimatorType)
         samplingHelpers.checkSettings(self)
 
@@ -34,6 +42,7 @@ class ParameterEstimator(object):
         noParametersToEstimate = model.noParametersToEstimate
         noObservations = model.noObservations
 
+        self.noParametersToEstimate = noParametersToEstimate
         self.parameters = np.zeros((noIters, noParametersToEstimate))
         self.logPrior = np.zeros((noIters, 1))
         self.logLikelihood = np.zeros((noIters, 1))
@@ -47,6 +56,7 @@ class ParameterEstimator(object):
         self.hessian = np.zeros((noIters, noParametersToEstimate, noParametersToEstimate))
         self.proposedHessian = np.zeros((noParametersToEstimate, noParametersToEstimate))
 
+        self.currentIteration = 0
         samplingHelpers.initialiseParameters(self, stateEstimator, model)
 
         for iteration in range(1, noIters):
@@ -82,6 +92,7 @@ class ParameterEstimator(object):
         self.logLikelihood[iteration, :] = self.proposedLogLikelihood
         self.states[iteration, :] = self.proposedStates
         self.gradient[iteration, :] = self.proposedGradient
+        self.hessian[iteration, :, :] = self.proposedHessian
         self.acceptProb[iteration, :] = self.currentAcceptanceProbability
         self.accepted[iteration] = 1.0
 
@@ -92,5 +103,6 @@ class ParameterEstimator(object):
         self.logLikelihood[iteration, :] = self.logLikelihood[iteration - 1, :]
         self.states[iteration, :] = self.states[iteration - 1, :]
         self.gradient[iteration, :] = self.gradient[iteration - 1, :]
+        self.hessian[iteration, :, :] = self.hessian[iteration - 1, :, :]
         self.acceptProb[iteration, :] = self.acceptProb[iteration - 1, :]
         self.accepted[iteration] = 0.0

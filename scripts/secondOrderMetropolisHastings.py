@@ -25,24 +25,21 @@ def run():
     kalmanSettings = {'initialState': systemModel.initialState,
                       'initialCovariance': 1e-5,
                       'estimateGradients': True,
-                      'estimateHessians': False
+                      'estimateHessians': True
     }
     kalman.settings = kalmanSettings
     
     # Metropolis-Hastings
-    stepSize = 1.125 / np.sqrt(3.0**(1.0 / 3.0)) / systemModel.noObservations
-    posteriorCovariance = np.array(( 0.00896405, -0.00202991, -0.08106153,
-                                    -0.00202991,  0.0025671,   0.04450741,
-                                    -0.08106153,  0.04450741,  1.44413436)).reshape((3,3))
+    stepSize = 1.0
+
     mhSettings = {'noIters': 1000, 
                   'noBurnInIters': 200, 
                   'stepSize': stepSize, 
                   'initialParameters': (0.0, 0.0, 0.5), 
-                  'hessianEstimate': posteriorCovariance,
                   'verbose': False,
                   'printWarningsForUnstableSystems': False
                   }
     mhSampler = metropolisHastings.ParameterEstimator(mhSettings)
-    mhSampler.run(kalman, inferenceModel, 'mh1')
-    #mhSampler.plot()
+    mhSampler.run(kalman, inferenceModel, 'mh2')
+    mhSampler.plot()
 

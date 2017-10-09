@@ -39,7 +39,7 @@ def initialiseParameters(mh, state, model):
 def proposeParameters(mh):
     noParameters = mh.settings['noParametersToEstimate']
     currentParameters = mh.parameters[mh.currentIteration - 1]
-    currentGradient = mh.gradient[mh.currentIteration - 1]
+    currentGradient = mh.gradient[mh.currentIteration - 1, :]
 
     stepSize = mh.settings['stepSize']
     if 'hessianEstimate' in mh.settings:
@@ -70,7 +70,7 @@ def computeAcceptanceProbability(mh, state, model):
     currentParameters = mh.parameters[mh.currentIteration - 1]
     currentLogPrior = mh.logPrior[mh.currentIteration - 1]
     currentLogLikelihood = mh.logLikelihood[mh.currentIteration - 1]
-    currentGradient = mh.gradient[mh.currentIteration - 1]
+    currentGradient = mh.gradient[mh.currentIteration - 1, :]
     currentStates = mh.states[mh.currentIteration - 1, :]
     
     if model.areParametersValid():
