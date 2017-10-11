@@ -32,6 +32,9 @@ class model(object):
         return norm.logpdf(currentObservation, currentState, self.parameters['sigma_e'])
     
     def areParametersValid(self):
+        if self.parameterisation is 'unrestricted':
+            return True
+        
         out = True
         if(np.abs(self.parameters['phi']) > 1.0):
             out = False
@@ -74,13 +77,26 @@ class model(object):
         py = currentObservation - currentState
         gradient = {}
         gradient.update({'mu': (1.0 - self.parameters['phi']) * self.parameters['sigma_v']**(-2) * px})
-        gradient.update({'mu': (currentState - self.parameters['mu']) * self.parameters['sigma_v']**(-2) * px})
-        gradient.update({'mu': self.parameters['sigma_v']**(-3) * px**2 - self.parameters['sigma_v']**(-1)})
-        gradient.update({'mu': self.parameters['sigma_e']**(-3) * py**2 - self.parameters['sigma_e']**(-1)   })
+        gradient.update({'phi': (currentState - self.parameters['mu']) * self.parameters['sigma_v']**(-2) * px})
+        gradient.update({'sigma_v': self.parameters['sigma_v']**(-3) * px**2 - self.parameters['sigma_v']**(-1)})
+        gradient.update({'sigma_e': self.parameters['sigma_e']**(-3) * py**2 - self.parameters['sigma_e']**(-1)   })
         return(gradient)         
 
+    def transformVariables(self):
+        if self.parameterisation is 'unrestricted':
+            self.parameters['mu'] = self.parameters['mu']
+            self.parameters['phi'] = np.tanh(self.parameters['phi'])
+            self.parameters['sigma_v'] = np.exp(self.parameters['sigma_v'])
+            self.parameters['sigma_e'] = np.exp(self.parameters['sigma_e'])
+    
+    def untransformVariables(self):
+        if self.parameterisation is 'unrestricted':        
+            self.parameters['mu'] = self.parameters['mu']
+            self.parameters['phi'] = np.arctanh(self.parameters['phi'])
+            self.parameters['sigma_v'] = np.log(self.parameters['sigma_v'])
+            self.parameters['sigma_e'] = np.log(self.parameters['sigma_e'])
+    
     # Define standard methods for the model struct
     storeParameters = template_storeParameters
-
     generateData = template_generateData
     importData = template_importData

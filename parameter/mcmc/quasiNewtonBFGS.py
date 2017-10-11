@@ -22,6 +22,22 @@ def checkSettings(mh):
         mh.settings.update({'printWarningsForUnstableSystems': False})
         print("Missing settings: printWarningsForUnstableSystemmh, defaulting to " + str(mh.settings['printWarningsForUnstableSystems']) + ".")   
 
+    if not 'memoryLength' in mh.settings: 
+        mh.settings.update({'memoryLength': 10})
+        print("Missing settings: memoryLength, defaulting to " + str(mh.settings['memoryLength']) + ".")   
+
+    if not 'initialHessian' in mh.settings: 
+        mh.settings.update({'initialHessian': 1e-8})
+        print("Missing settings: initialHessian, defaulting to " + str(mh.settings['initialHessian']) + ".")           
+
+    if not 'trustRegionSize' in mh.settings: 
+        mh.settings.update({'trustRegionSize': 0})
+        print("Missing settings: trustRegionSize, defaulting to " + str(mh.settings['trustRegionSize']) + ".")
+
+    if not 'useDampedBFGS' in mh.settings: 
+        mh.settings.update({'useDampedBFGS': True})
+        print("Missing settings: useDampedBFGS, defaulting to " + str(mh.settings['useDampedBFGS']) + ".") 
+
 def initialiseParameters(mh, state, model):
     model.storeParameters(mh.settings['initialParameters'])
     
@@ -30,7 +46,7 @@ def initialiseParameters(mh, state, model):
         state.smoother(model)
         mh.logLikelihood[0] = state.logLikelihood
         mh.gradient[0, :] = state.gradientInternal
-        mh.hessian[0, :, :] = estimateHessian(mh)
+        mh.hessian[0, :, :], mh.naturalGradient[0, :] = estimateHessian(mh)
         mh.states[0, :] = state.filteredStateEstimate
         mh.acceptProb[0] = 1.0
         mh.parameters[0, :] = mh.settings['initialParameters']
@@ -40,24 +56,22 @@ def initialiseParameters(mh, state, model):
 def proposeParameters(mh):
     noParameters = mh.settings['noParametersToEstimate']
     currentParameters = mh.parameters[mh.currentIteration - 1]
-    currentGradient = mh.gradient[mh.currentIteration - 1, :]
-    currentInverseHessian = mh.hessian[mh.currentIteration - 1, :, :]
+    currentNaturalGradient = mh.naturalGradient[mh.currentIteration - 1, :]
+    currentHessian = mh.hessian[mh.currentIteration - 1, :, :]
 
     stepSize = mh.settings['stepSize']
-    proposalVariance = stepSize**2 * currentInverseHessian
+    proposalVariance = stepSize * currentHessian
 
     if (noParameters == 1):
-        perturbation = stepSize * currentInverseHessian * np.random.normal()
+        perturbation = stepSize * currentHessian * np.random.normal()
     else:
-        perturbation = np.random.multivariate_normal(np.zeros(noParameters), proposalVariance)
+        perturbation = np.matmul(proposalVariance, np.random.multivariate_normal(np.zeros(noParameters), np.diag(np.ones(noParameters))))
     
-    gradientContribution = 0.5 * stepSize**2 * np.dot(currentInverseHessian, currentGradient)
-    gradientContribution = np.asarray(gradientContribution).reshape(-1)
+    gradientContribution = 0.5 * stepSize**2 * currentNaturalGradient
     mh.proposedParameters = currentParameters + gradientContribution + perturbation
 
     if mh.settings['verbose']:
         print("Proposing parameters: " + str(mh.proposedParameters) + " given " + str(currentParameters) + ".")
-
 
 def computeAcceptanceProbability(mh, state, model):
     noParameters = mh.settings['noParametersToEstimate']
@@ -67,7 +81,8 @@ def computeAcceptanceProbability(mh, state, model):
     currentLogPrior = mh.logPrior[mh.currentIteration - 1]
     currentLogLikelihood = mh.logLikelihood[mh.currentIteration - 1]
     currentGradient = mh.gradient[mh.currentIteration - 1, :]
-    currentInverseHessian = mh.hessian[mh.currentIteration - 1, :, :]
+    currentHessian = mh.hessian[mh.currentIteration - 1, :, :]
+    currentNaturalGradient = mh.naturalGradient[mh.currentIteration - 1, :]
     currentStates = mh.states[mh.currentIteration - 1, :]
     
     if model.areParametersValid():
@@ -76,22 +91,22 @@ def computeAcceptanceProbability(mh, state, model):
         state.smoother(model)
         proposedLogLikelihood = state.logLikelihood
         proposedGradient = state.gradientInternal
-        proposedInverseHessian = estimateHessian(mh)
+        (proposedHessian, proposedNaturalGradient) = estimateHessian(mh)
         proposedStates = state.filteredStateEstimate
         
-        if isPositiveSemidefinite(proposedInverseHessian):
+        if isPositiveSemidefinite(proposedHessian):
             logPriorDifference = proposedLogPrior - currentLogPrior
             logLikelihoodDifference = proposedLogLikelihood - currentLogLikelihood
 
-            gradientContribution = 0.5 * stepSize**2 * np.dot(currentInverseHessian, currentGradient)
-            proposalMean = currentParameters + np.asarray(gradientContribution).reshape(-1)
-            proposalVariance = stepSize**2 * currentInverseHessian
-            logProposalProposed = multivariate_normal.logpdf(proposedParameters, proposalMean, proposalVariance)
+            proposalMean = currentParameters
+            proposalMean += 0.5 * stepSize**2 * currentNaturalGradient
+            proposalVariance = stepSize * currentHessian
+            logProposalProposed = multivariateGaussianLogPDF(proposedParameters, proposalMean, proposalVariance)
 
-            gradientContribution = 0.5 * stepSize**2 * np.dot(proposedInverseHessian, proposedGradient)
-            proposalMean = proposedParameters + np.asarray(gradientContribution).reshape(-1)
-            proposalVariance = stepSize**2 * proposedInverseHessian
-            logProposalCurrent = multivariate_normal.logpdf(currentParameters, proposalMean, proposalVariance)
+            proposalMean = proposedParameters
+            proposalMean += 0.5 * stepSize**2 * proposedNaturalGradient
+            proposalVariance = stepSize * proposedHessian
+            logProposalCurrent = multivariateGaussianLogPDF(currentParameters, proposalMean, proposalVariance)
 
             logProposalDifference = logProposalProposed - logProposalCurrent
 
@@ -110,41 +125,49 @@ def computeAcceptanceProbability(mh, state, model):
         mh.proposedLogLikelihood = proposedLogLikelihood
         mh.proposedStates = proposedStates
         mh.proposedGradient = proposedGradient
-        mh.proposedHessian = proposedInverseHessian
+        mh.proposedNaturalGradient = proposedNaturalGradient
+        mh.proposedHessian = proposedHessian
         mh.currentAcceptanceProbability = np.min((1.0, acceptProb))
-
     else:
-        mh.proposedLogPrior = currentLogPrior
-        mh.proposedLogLikelihood = currentLogLikelihood
-        mh.proposedStates = currentStates
-        mh.proposedGradient = currentGradient
-        mh.proposedHessian = currentGradient
         mh.currentAcceptanceProbability = 0.0
 
         if mh.settings['printWarningsForUnstableSystems']:
             print("Proposed parameters: " + str(mh.proposedParameters) + " results in an unstable system so rejecting.")
-    
+
 def estimateHessian(mh):
     memoryLength = mh.settings['memoryLength']
+    baseStepSize = mh.settings['baseStepSize']
     initialHessian = mh.settings['initialHessian']
+    lam = mh.settings['trustRegionSize']
 
     noParameters = mh.noParametersToEstimate
     identityMatrix = np.diag(np.ones(noParameters))
 
     if mh.currentIteration < memoryLength:
-        return identityMatrix * initialHessian
+        inverseHessianEstimate = identityMatrix * baseStepSize
+        inverseHessianEstimateSquared = np.matmul(inverseHessianEstimate, inverseHessianEstimate.transpose())
+        naturalGradient = np.dot(inverseHessianEstimateSquared, mh.gradient[mh.currentIteration - 1, :])
+        return inverseHessianEstimate, naturalGradient
     
     # Extract parameters and gradidents
-    idx = range(mh.currentIteration, mh.currentIteration - memoryLength, -1)
+    idx = range(mh.currentIteration - memoryLength, mh.currentIteration)
     parameters = mh.parameters[idx, :]
     gradients = mh.gradient[idx, :]
+    hessians = mh.hessian[idx, :, :]
     accepted = mh.accepted[idx]
     target = mh.logPrior[idx] + mh.logLikelihood[idx]
 
     # Keep only unique parameters and gradients
     idx = np.where(accepted > 0)[0]
+    if len(idx) == 0:
+        inverseHessianEstimate = identityMatrix * baseStepSize
+        inverseHessianEstimateSquared = np.matmul(inverseHessianEstimate, inverseHessianEstimate.transpose())
+        naturalGradient = np.dot(inverseHessianEstimateSquared, mh.gradient[mh.currentIteration - 1, :])
+        return inverseHessianEstimate, naturalGradient
+
     parameters = parameters[idx, :]
     gradients = gradients[idx, :]
+    hessians = hessians[idx, :, :]
     target = np.concatenate(target[idx]).reshape(-1)    
     accepted = accepted[idx, :]
 
@@ -152,33 +175,56 @@ def estimateHessian(mh):
     idx = np.argsort(target)
     parameters = parameters[idx, :]
     gradients = gradients[idx, :]
+    hessians = np.matmul(hessians[idx, :], hessians[idx, :])
     
     parametersDiff = np.zeros((len(idx) - 1, noParameters))
     gradientsDiff = np.zeros((len(idx) - 1, noParameters))
+
+    # TODO: Uncertain about the sign of the gradients
     for i in range(len(idx) - 1):
         parametersDiff[i, :] = parameters[i+1, :] - parameters[i, :]
-        gradientsDiff[i, :] = gradients[i+1, :] - gradients[i, :]
+        gradientsDiff[i, :] = gradients[i+1, :] - gradients[i, :] + lam * np.matmul(hessians[i, :, :], gradients[i, :])
     
-    gradientsDiff = -gradientsDiff
-    inverseHessianEstimate = np.sqrt(initialHessian) * identityMatrix
+    inverseHessianEstimate = initialHessian * identityMatrix
+    noEffectiveSamples = 0
 
     for i in range(parametersDiff.shape[0]):
+        B = np.matmul(inverseHessianEstimate, inverseHessianEstimate.transpose())
+        doUpdate = False
 
-        if np.dot(parametersDiff[i], gradientsDiff[i]) > 0:
-            B = np.matmul(inverseHessianEstimate, inverseHessianEstimate)
-            t = np.dot(parametersDiff[i], B)
-            t = np.dot(t, gradientsDiff[i])
-            t = parametersDiff[i] / t
+        if mh.settings['useDampedBFGS']:
+            term1 = np.dot(parametersDiff[i], gradientsDiff[i])
+            term2 = np.dot(np.dot(parametersDiff[i], B), parametersDiff[i])
+
+            if term1 > 0.2 * term2:
+                theta = 1.0
+            else:
+                theta = 0.5 * term2 / (term2 - term1)
             
-            u1 = np.dot(parametersDiff[i], B)
-            u1 = np.dot(u1, gradientsDiff[i])
-            u2 = np.dot(parametersDiff[i], gradientsDiff[i])
-            u3 = np.dot(B, parametersDiff[i])
-            u = np.sqrt(np.abs(u1 / u2)) * gradientsDiff[i] + u3
+            r = theta * gradientsDiff[i] + (1.0 - theta) * np.dot(B, parametersDiff[i])
+            doUpdate = True
+        else:
+            if np.dot(parametersDiff[i], gradientsDiff[i]) > 0:
+                doUpdate = True
+                r = gradientsDiff[i]
+
+        if doUpdate:
+            quadraticFormSB = np.dot(np.dot(parametersDiff[i], B), parametersDiff[i])
+            t = parametersDiff[i] / quadraticFormSB
+            
+            u1 = np.sqrt(quadraticFormSB / np.dot(parametersDiff[i], r))
+            u2 = np.dot(B, parametersDiff[i])
+            u = u1 * r + u2
 
             inverseHessianEstimate = np.matmul(identityMatrix - np.outer(u, t), inverseHessianEstimate)            
+            noEffectiveSamples += 1
     
-    return correctHessian(np.matmul(inverseHessianEstimate, inverseHessianEstimate))
+    mh.noEffectiveSamples[mh.currentIteration] = noEffectiveSamples
+
+    inverseHessianEstimateSquared = np.matmul(inverseHessianEstimate, inverseHessianEstimate.transpose())
+    naturalGradient = np.dot(inverseHessianEstimateSquared, mh.gradient[mh.currentIteration - 1, :])
+    return inverseHessianEstimate, naturalGradient
+
 
 def isPositiveSemidefinite(x):
     return np.all(np.linalg.eigvals(x) > 0)
@@ -202,3 +248,12 @@ def correctHessian(x, approach='regularise'):
         print("Failed fixing Hessian")
     
     return(x)
+
+def multivariateGaussianLogPDF(x, mu, SigmaChol):
+    term1 = -0.5 * len(mu) * np.log(2.0 * np.pi) 
+    term2 = -1.0 * np.sum(np.log(np.diag(SigmaChol)))
+    SigmaCholInverse = np.linalg.pinv(SigmaChol)
+    SigmaInverse = np.matmul(SigmaCholInverse, SigmaCholInverse)
+    term3 = -0.5 * np.dot(np.dot(x - mu, SigmaInverse), x - mu)
+    
+    return term1 + term2 + term3

@@ -11,4 +11,4 @@
 #secondOrderMetropolisHastings.run()
 
 import scripts.quasiNewtonMetropolisHastings as quasiNewtonMetropolisHastings
-quasiNewtonMetropolisHastings.run()
+mhSampler = quasiNewtonMetropolisHastings.run()

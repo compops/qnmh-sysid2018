@@ -83,17 +83,15 @@ def computeAcceptanceProbability(mh, state, model):
             logPriorDifference = proposedLogPrior - currentLogPrior
             logLikelihoodDifference = proposedLogLikelihood - currentLogLikelihood
 
-            gradientContribution = 0.5 * stepSize**2 * np.dot(np.linalg.pinv(currentHessian), currentGradient)
-            gradientContribution = np.asarray(gradientContribution).reshape(-1)
-            mean = currentParameters + gradientContribution
+            proposalMean = currentParameters
+            proposalMean += np.asarray(0.5 * stepSize**2 * np.dot(np.linalg.pinv(currentHessian), currentGradient)).reshape(-1)
             proposalVariance = stepSize**2 * np.linalg.pinv(currentHessian)
-            logProposalProposed = multivariate_normal.logpdf(proposedParameters, mean, proposalVariance)
+            logProposalProposed = multivariate_normal.logpdf(proposedParameters, proposalMean, proposalVariance)
 
-            gradientContribution = 0.5 * stepSize**2 * np.dot(np.linalg.pinv(proposedHessian), proposedGradient)
-            gradientContribution = np.asarray(gradientContribution).reshape(-1)
-            mean = proposedParameters + gradientContribution
+            proposalMean = proposedParameters
+            proposalMean += np.asarray(0.5 * stepSize**2 * np.dot(np.linalg.pinv(proposedHessian), proposedGradient)).reshape(-1)
             proposalVariance = stepSize**2 * np.linalg.pinv(proposedHessian)
-            logProposalCurrent = multivariate_normal.logpdf(currentParameters, mean, proposalVariance)
+            logProposalCurrent = multivariate_normal.logpdf(currentParameters, proposalMean, proposalVariance)
 
             logProposalDifference = logProposalProposed - logProposalCurrent
 

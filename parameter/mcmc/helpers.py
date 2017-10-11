@@ -42,11 +42,13 @@ def printProgressReportToScreen(sampler):
     #     print("")
     #     print(" Current log-SJD value:                          ")
     #     print(str(np.log(sampler.calcSJD())))
-    # if ((sampler.samplertype == "qsampler2") & (sampler.iter > sampler.memoryLength)):
-    #     print("")
-    #     print(" (qsampler2): mean no. samples for Hessian estimate:           ")
-    #     print("%.4f" %
-    #           np.mean(sampler.nHessianSamples[range(sampler.memoryLength, sampler.iter)]))
+    if 'memoryLength' in sampler.settings:
+        if (iteration > sampler.settings['memoryLength']):
+            print("")
+            print(" Mean number of samples for Hessian estimate:           ")
+            noEffectiveSamples = sampler.noEffectiveSamples[range(iteration)]
+            idx = np.where(noEffectiveSamples > 0)
+            print("%.4f" % np.mean(noEffectiveSamples[idx]))
     print("################################################################################################ ")
 
 # Check if dirs for outputs exists, otherwise create them

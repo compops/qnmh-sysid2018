@@ -30,18 +30,21 @@ def run():
     kalman.settings = kalmanSettings
     
     # Metropolis-Hastings
-    stepSize = 1.0
-
     mhSettings = {'noIters': 1000, 
                   'noBurnInIters': 200, 
-                  'stepSize': stepSize, 
+                  'stepSize': 0.3, 
                   'initialParameters': (0.0, 0.0, 0.5), 
                   'verbose': False,
                   'printWarningsForUnstableSystems': False,
-                  'memoryLength': 10,
-                  'initialHessian': 0.0001
+                  'baseStepSize': 0.0001,
+                  'memoryLength': 100,
+                  'initialHessian': 1e-10,
+                  'trustRegionSize': 0,
+                  'useDampedBFGS' : True
                   }
     mhSampler = metropolisHastings.ParameterEstimator(mhSettings)
     mhSampler.run(kalman, inferenceModel, 'qmh')
     mhSampler.plot()
+
+    return(mhSampler)
 

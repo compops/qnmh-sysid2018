@@ -30,11 +30,9 @@ def run():
     kalman.settings = kalmanSettings
     
     # Metropolis-Hastings
-    stepSize = 1.0
-
     mhSettings = {'noIters': 1000, 
                   'noBurnInIters': 200, 
-                  'stepSize': stepSize, 
+                  'stepSize': 1.0, 
                   'initialParameters': (0.0, 0.0, 0.5), 
                   'verbose': False,
                   'printWarningsForUnstableSystems': False

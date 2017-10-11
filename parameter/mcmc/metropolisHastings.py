@@ -50,11 +50,13 @@ class ParameterEstimator(object):
         
         self.acceptProb = np.zeros((noIters, 1))
         self.accepted = np.zeros((noIters, 1))
+        self.noEffectiveSamples = np.zeros((noIters, 1))
         
         self.gradient = np.zeros((noIters, noParametersToEstimate))
         self.proposedGradient = np.zeros((noParametersToEstimate))
-        self.hessian = np.zeros((noIters, noParametersToEstimate, noParametersToEstimate))
-        self.proposedHessian = np.zeros((noParametersToEstimate, noParametersToEstimate))
+        self.hessian = np.zeros((noIters, noParametersToEstimate, noParametersToEstimate))       
+        self.naturalGradient = np.zeros((noIters, noParametersToEstimate))
+        self.proposedNaturalGradient = np.zeros((noParametersToEstimate))
 
         self.currentIteration = 0
         samplingHelpers.initialiseParameters(self, stateEstimator, model)
@@ -92,6 +94,7 @@ class ParameterEstimator(object):
         self.logLikelihood[iteration, :] = self.proposedLogLikelihood
         self.states[iteration, :] = self.proposedStates
         self.gradient[iteration, :] = self.proposedGradient
+        self.naturalGradient[iteration, :] = self.proposedNaturalGradient
         self.hessian[iteration, :, :] = self.proposedHessian
         self.acceptProb[iteration, :] = self.currentAcceptanceProbability
         self.accepted[iteration] = 1.0
@@ -103,6 +106,7 @@ class ParameterEstimator(object):
         self.logLikelihood[iteration, :] = self.logLikelihood[iteration - 1, :]
         self.states[iteration, :] = self.states[iteration - 1, :]
         self.gradient[iteration, :] = self.gradient[iteration - 1, :]
+        self.naturalGradient[iteration, :] = self.naturalGradient[iteration - 1, :]
         self.hessian[iteration, :, :] = self.hessian[iteration - 1, :, :]
         self.acceptProb[iteration, :] = self.acceptProb[iteration - 1, :]
         self.accepted[iteration] = 0.0
