@@ -8,6 +8,7 @@ class model(object):
     modelName = "Linear Gaussian SSM with four parameters"
     modelType = "Data generation model"
     parameterisation = "standard"
+    currentMode = "Parameters in restricted space"
     filePrefix = "lgss"
     states = []
     observations = []
@@ -75,28 +76,60 @@ class model(object):
     def gradientLogJointLikelihood(self, nextState, currentState, currentObservation):
         px = nextState - self.parameters['mu'] - self.parameters['phi'] * (currentState - self.parameters['mu'])
         py = currentObservation - currentState
-        gradient = {}
-        gradient.update({'mu': (1.0 - self.parameters['phi']) * self.parameters['sigma_v']**(-2) * px})
-        gradient.update({'phi': (currentState - self.parameters['mu']) * self.parameters['sigma_v']**(-2) * px})
-        gradient.update({'sigma_v': self.parameters['sigma_v']**(-3) * px**2 - self.parameters['sigma_v']**(-1)})
-        gradient.update({'sigma_e': self.parameters['sigma_e']**(-3) * py**2 - self.parameters['sigma_e']**(-1)   })
+        if self.parameterisation is 'unrestricted': 
+            gradient = {}
+            gradient.update({'mu': (1.0 - self.parameters['phi']) * self.parameters['sigma_v']**(-2) * px})
+            gradient.update({'phi': (currentState - self.parameters['mu']) * self.parameters['sigma_v']**(-2) * px * (1.0 - self.parameters['phi']**2)})
+            gradient.update({'sigma_v': self.parameters['sigma_v']**(-2) * px**2 - 1.0})
+            gradient.update({'sigma_e': self.parameters['sigma_e']**(-2) * py**2 - 1.0})
+        else:
+            gradient = {}
+            gradient.update({'mu': (1.0 - self.parameters['phi']) * self.parameters['sigma_v']**(-2) * px})
+            gradient.update({'phi': (currentState - self.parameters['mu']) * self.parameters['sigma_v']**(-2) * px})
+            gradient.update({'sigma_v': self.parameters['sigma_v']**(-3) * px**2 - self.parameters['sigma_v']**(-1)})
+            gradient.update({'sigma_e': self.parameters['sigma_e']**(-3) * py**2 - self.parameters['sigma_e']**(-1)   })
         return(gradient)         
 
-    def transformVariables(self):
+    def transformParameters(self):
         if self.parameterisation is 'unrestricted':
-            self.parameters['mu'] = self.parameters['mu']
-            self.parameters['phi'] = np.tanh(self.parameters['phi'])
-            self.parameters['sigma_v'] = np.exp(self.parameters['sigma_v'])
-            self.parameters['sigma_e'] = np.exp(self.parameters['sigma_e'])
+            if 'mu' in self.parametersToEstimate:
+                self.parameters['mu'] = self.parameters['mu']
+            if 'phi' in self.parametersToEstimate:                
+                self.parameters['phi'] = np.tanh(self.parameters['phi'])
+            if 'sigma_v' in self.parametersToEstimate:
+                self.parameters['sigma_v'] = np.exp(self.parameters['sigma_v'])
+            if 'sigma_e' in self.parametersToEstimate:                
+                self.parameters['sigma_e'] = np.exp(self.parameters['sigma_e'])
+            self.currentMode = "Parameters in restricted space"
     
-    def untransformVariables(self):
-        if self.parameterisation is 'unrestricted':        
-            self.parameters['mu'] = self.parameters['mu']
-            self.parameters['phi'] = np.arctanh(self.parameters['phi'])
-            self.parameters['sigma_v'] = np.log(self.parameters['sigma_v'])
-            self.parameters['sigma_e'] = np.log(self.parameters['sigma_e'])
+    def untransformParameters(self):
+        if self.parameterisation is 'unrestricted':    
+            if 'mu' in self.parametersToEstimate:    
+                self.parameters['mu'] = self.parameters['mu']
+            if 'phi' in self.parametersToEstimate:
+                self.parameters['phi'] = np.arctanh(self.parameters['phi'])
+            if 'sigma_v' in self.parametersToEstimate:                
+                self.parameters['sigma_v'] = np.log(self.parameters['sigma_v'])
+            if 'sigma_e' in self.parametersToEstimate:                
+                self.parameters['sigma_e'] = np.log(self.parameters['sigma_e'])
+            self.currentMode = "Parameters in unrestricted space"
+
+    def logJacobian(self):
+        if self.parameterisation is 'unrestricted':  
+            jacobian = {}
+            jacobian.update({'mu': 0.0})
+            jacobian.update({'phi': np.log(1.0 - self.parameters['phi']**2) })
+            jacobian.update({'sigma_v': np.log(self.parameters['sigma_v']) })
+            jacobian.update({'sigma_e': np.log(self.parameters['sigma_e']) })
+            output = 0.0
+            for param in self.parametersToEstimate:
+                output += jacobian[param]
+        else: 
+            output = 0.0
+        return(output)
     
     # Define standard methods for the model struct
     storeParameters = template_storeParameters
+    getParameters = template_getParameters
     generateData = template_generateData
     importData = template_importData

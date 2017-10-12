@@ -25,12 +25,15 @@ def initialiseParameters(mh, state, model):
     model.storeParameters(mh.settings['initialParameters'])
     
     if model.areParametersValid():
+        mh.logJacobian[0] = model.logJacobian()
         _, mh.logPrior[0] = model.logPrior()
         state.filter(model)
         mh.logLikelihood[0] = state.logLikelihood
         mh.states[0, :] = state.filteredStateEstimate
         mh.acceptProb[0] = 1.0
-        mh.parameters[0, :] = mh.settings['initialParameters']
+        mh.parametersUntransformed[0, :] = mh.settings['initialParameters']
+        model.untransformParameters()
+        mh.parameters[0, :] = model.getParameters()
     else:
         raise NameError("The initial values of the parameters does not result in a valid model.")
 
@@ -56,23 +59,24 @@ def proposeParameters(mh):
 
 
 def computeAcceptanceProbability(mh, state, model):
-    currentParameters = mh.parameters[mh.currentIteration - 1]
-
+    currentLogJacobian = mh.logJacobian[mh.currentIteration - 1]
     currentLogPrior = mh.logPrior[mh.currentIteration - 1]
     currentLogLikelihood = mh.logLikelihood[mh.currentIteration - 1]
     currentStates = mh.states[mh.currentIteration - 1, :]
     
     if model.areParametersValid():
         _, proposedLogPrior = model.logPrior()
+        proposedLogJacobian = model.logJacobian()
         state.filter(model)
         proposedLogLikelihood = state.logLikelihood
         proposedStates = state.filteredStateEstimate
         
         logPriorDifference = proposedLogPrior - currentLogPrior
         logLikelihoodDifference = proposedLogLikelihood - currentLogLikelihood
+        
         logProposalDifference = 0.0
-
-        acceptProb = np.exp(logPriorDifference + logLikelihoodDifference + logProposalDifference)
+        logJacobianDifference = proposedLogJacobian - currentLogJacobian
+        acceptProb = np.exp(logPriorDifference + logLikelihoodDifference + logProposalDifference + logJacobianDifference)
 
         if mh.settings['verbose']:
             print("proposedLogLikelihood: " + str(proposedLogLikelihood) + ".")
@@ -81,15 +85,13 @@ def computeAcceptanceProbability(mh, state, model):
             print("logProposalDifference: " + str(logProposalDifference) + ".")
             print("acceptProb: " + str(acceptProb) + ".")            
 
+        mh.proposedParametersUntransformed = model.getParameters()
+        mh.proposedLogJacobian = proposedLogJacobian
         mh.proposedLogPrior = proposedLogPrior
         mh.proposedLogLikelihood = proposedLogLikelihood
         mh.proposedStates = proposedStates
         mh.currentAcceptanceProbability = np.min((1.0, acceptProb))
-
     else:
-        mh.proposedLogPrior = currentLogPrior
-        mh.proposedLogLikelihood = currentLogLikelihood
-        mh.proposedStates = currentStates
         mh.currentAcceptanceProbability = 0.0
 
         if mh.settings['printWarningsForUnstableSystems']:

@@ -26,6 +26,7 @@ def initialiseParameters(mh, state, model):
     model.storeParameters(mh.settings['initialParameters'])
     
     if model.areParametersValid():
+        mh.logJacobian[0] = model.logJacobian()
         _, mh.logPrior[0] = model.logPrior()
         state.smoother(model)
         mh.logLikelihood[0] = state.logLikelihood
@@ -33,7 +34,9 @@ def initialiseParameters(mh, state, model):
         mh.hessian[0, :, :] = correctHessian(state.hessianInternal)
         mh.states[0, :] = state.filteredStateEstimate
         mh.acceptProb[0] = 1.0
-        mh.parameters[0, :] = mh.settings['initialParameters']
+        mh.parametersUntransformed[0, :] = mh.settings['initialParameters']
+        model.untransformParameters()
+        mh.parameters[0, :] = model.getParameters()
     else:
         raise NameError("The initial values of the parameters does not result in a valid model.")
 
@@ -63,7 +66,8 @@ def computeAcceptanceProbability(mh, state, model):
     noParameters = mh.settings['noParametersToEstimate']
     stepSize = mh.settings['stepSize']
 
-    currentParameters = mh.parameters[mh.currentIteration - 1]
+    currentParameters = mh.parametersUntransformed[mh.currentIteration - 1]
+    currentLogJacobian = mh.logJacobian[mh.currentIteration - 1]
     currentLogPrior = mh.logPrior[mh.currentIteration - 1]
     currentLogLikelihood = mh.logLikelihood[mh.currentIteration - 1]
     currentGradient = mh.gradient[mh.currentIteration - 1, :]
@@ -71,7 +75,8 @@ def computeAcceptanceProbability(mh, state, model):
     currentStates = mh.states[mh.currentIteration - 1, :]
     
     if model.areParametersValid():
-        proposedParameters = mh.proposedParameters
+        proposedParameters = model.getParameters()
+        proposedLogJacobian = model.logJacobian()
         _, proposedLogPrior = model.logPrior()
         state.smoother(model)
         proposedLogLikelihood = state.logLikelihood
@@ -94,8 +99,8 @@ def computeAcceptanceProbability(mh, state, model):
             logProposalCurrent = multivariate_normal.logpdf(currentParameters, proposalMean, proposalVariance)
 
             logProposalDifference = logProposalProposed - logProposalCurrent
-
-            acceptProb = np.exp(logPriorDifference + logLikelihoodDifference + logProposalDifference)
+            logJacobianDifference = proposedLogJacobian - currentLogJacobian
+            acceptProb = np.exp(logPriorDifference + logLikelihoodDifference + logProposalDifference + logJacobianDifference)
         else:
             acceptProb = 0.0
 
@@ -106,6 +111,8 @@ def computeAcceptanceProbability(mh, state, model):
             print("logProposalDifference: " + str(logProposalDifference) + ".")
             print("acceptProb: " + str(acceptProb) + ".")            
 
+        mh.proposedParametersUntransformed = proposedParameters
+        mh.proposedLogJacobian = proposedLogJacobian
         mh.proposedLogPrior = proposedLogPrior
         mh.proposedLogLikelihood = proposedLogLikelihood
         mh.proposedStates = proposedStates
@@ -114,11 +121,6 @@ def computeAcceptanceProbability(mh, state, model):
         mh.currentAcceptanceProbability = np.min((1.0, acceptProb))
 
     else:
-        mh.proposedLogPrior = currentLogPrior
-        mh.proposedLogLikelihood = currentLogLikelihood
-        mh.proposedStates = currentStates
-        mh.proposedGradient = currentGradient
-        mh.proposedHessian = currentGradient
         mh.currentAcceptanceProbability = 0.0
 
         if mh.settings['printWarningsForUnstableSystems']:

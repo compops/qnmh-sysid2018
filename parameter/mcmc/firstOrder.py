@@ -26,13 +26,16 @@ def initialiseParameters(mh, state, model):
     model.storeParameters(mh.settings['initialParameters'])
     
     if model.areParametersValid():
+        mh.logJacobian[0] = model.logJacobian()
         _, mh.logPrior[0] = model.logPrior()
         state.smoother(model)
         mh.logLikelihood[0] = state.logLikelihood
         mh.gradient[0, :] = state.gradientInternal
         mh.states[0, :] = state.filteredStateEstimate
         mh.acceptProb[0] = 1.0
-        mh.parameters[0, :] = mh.settings['initialParameters']
+        mh.parametersUntransformed[0, :] = mh.settings['initialParameters']
+        model.untransformParameters()
+        mh.parameters[0, :] = model.getParameters()
     else:
         raise NameError("The initial values of the parameters does not result in a valid model.")
 
@@ -67,14 +70,16 @@ def computeAcceptanceProbability(mh, state, model):
     else:
         proposalVariance = stepSize**2 * np.diag(np.ones(noParameters))
 
-    currentParameters = mh.parameters[mh.currentIteration - 1]
+    currentParametersUntransformed = mh.parametersUntransformed[mh.currentIteration - 1]
+    currentLogJacobian = mh.logJacobian[mh.currentIteration - 1]
     currentLogPrior = mh.logPrior[mh.currentIteration - 1]
     currentLogLikelihood = mh.logLikelihood[mh.currentIteration - 1]
     currentGradient = mh.gradient[mh.currentIteration - 1, :]
     currentStates = mh.states[mh.currentIteration - 1, :]
     
     if model.areParametersValid():
-        proposedParameters = mh.proposedParameters
+        proposedParametersUntransformed = model.getParameters()
+        proposedLogJacobian = model.logJacobian()
         _, proposedLogPrior = model.logPrior()
         state.smoother(model)
         proposedLogLikelihood = state.logLikelihood
@@ -84,15 +89,15 @@ def computeAcceptanceProbability(mh, state, model):
         logPriorDifference = proposedLogPrior - currentLogPrior
         logLikelihoodDifference = proposedLogLikelihood - currentLogLikelihood
 
-        mean = currentParameters + 0.5 * stepSize**2 * currentGradient
-        logProposalProposed = multivariate_normal.logpdf(proposedParameters, mean, proposalVariance)
+        mean = currentParametersUntransformed + 0.5 * stepSize**2 * currentGradient
+        logProposalProposed = multivariate_normal.logpdf(proposedParametersUntransformed, mean, proposalVariance)
 
-        mean = proposedParameters + 0.5 * stepSize**2 * proposedGradient
-        logProposalCurrent = multivariate_normal.logpdf(currentParameters, mean, proposalVariance)
+        mean = proposedParametersUntransformed + 0.5 * stepSize**2 * proposedGradient
+        logProposalCurrent = multivariate_normal.logpdf(currentParametersUntransformed, mean, proposalVariance)
 
         logProposalDifference = logProposalProposed - logProposalCurrent
-
-        acceptProb = np.exp(logPriorDifference + logLikelihoodDifference + logProposalDifference)
+        logJacobianDifference = proposedLogJacobian - currentLogJacobian
+        acceptProb = np.exp(logPriorDifference + logLikelihoodDifference + logProposalDifference + logJacobianDifference)
 
         if mh.settings['verbose']:
             print("proposedLogLikelihood: " + str(proposedLogLikelihood) + ".")
@@ -100,18 +105,15 @@ def computeAcceptanceProbability(mh, state, model):
             print("logLikelihoodDifference: " + str(logLikelihoodDifference) + ".")
             print("logProposalDifference: " + str(logProposalDifference) + ".")
             print("acceptProb: " + str(acceptProb) + ".")            
-
+        
+        mh.proposedParametersUntransformed = proposedParametersUntransformed
+        mh.proposedLogJacobian = proposedLogJacobian
         mh.proposedLogPrior = proposedLogPrior
         mh.proposedLogLikelihood = proposedLogLikelihood
         mh.proposedStates = proposedStates
         mh.proposedGradient = proposedGradient
         mh.currentAcceptanceProbability = np.min((1.0, acceptProb))
-
     else:
-        mh.proposedLogPrior = currentLogPrior
-        mh.proposedLogLikelihood = currentLogLikelihood
-        mh.proposedStates = currentStates
-        mh.proposedGradient = currentGradient
         mh.currentAcceptanceProbability = 0.0
 
         if mh.settings['printWarningsForUnstableSystems']:

@@ -18,7 +18,9 @@ def run():
     systemModel.generateData()
 
     # Inference model
-    inferenceModel = getInferenceModel(systemModel, parametersToEstimate = ('mu', 'phi', 'sigma_v'))
+    inferenceModel = getInferenceModel(systemModel, 
+                                       parametersToEstimate = ('mu', 'phi', 'sigma_v'),
+                                       unRestrictedParameters = True)
 
     # Kalman filter
     kalman = kalmanMethods.FilteringSmoothing()
@@ -32,13 +34,13 @@ def run():
     # Metropolis-Hastings
     mhSettings = {'noIters': 1000, 
                   'noBurnInIters': 200, 
-                  'stepSize': 0.3, 
-                  'initialParameters': (0.0, 0.0, 0.5), 
+                  'stepSize': 1.0, 
+                  'initialParameters': (0.2, 0.8, 1.0), 
                   'verbose': False,
                   'printWarningsForUnstableSystems': False,
-                  'baseStepSize': 0.0001,
-                  'memoryLength': 100,
-                  'initialHessian': 1e-10,
+                  'baseStepSize': 1e-2,
+                  'memoryLength': 10,
+                  'initialHessian': 1e-2,
                   'trustRegionSize': 0,
                   'useDampedBFGS' : True
                   }

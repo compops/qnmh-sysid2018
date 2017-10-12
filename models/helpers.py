@@ -2,9 +2,11 @@ import numpy as np
 import copy
 
 # Copy data from an instance of this struct to another
-def getInferenceModel(oldModel, parametersToEstimate):
+def getInferenceModel(oldModel, parametersToEstimate, unRestrictedParameters = True):
     newModel = copy.deepcopy(oldModel)
     newModel.modelType = "Inference model"
+    if unRestrictedParameters:
+        newModel.parameterisation = "unrestricted"
     newModel.noParametersToEstimate = len(parametersToEstimate)
     newModel.parametersToEstimate = parametersToEstimate
     newModel.trueParameters = oldModel.parameters
@@ -25,6 +27,13 @@ def template_storeParameters(model, newParameters):
         for param in model.parametersToEstimate:
             model.parameters[param] = newParameters[model.parametersToEstimate.index(param)]
 
+# Store the parameters into the struct
+def template_getParameters(model):
+    parameters = []
+    for param in model.parametersToEstimate:
+        parameters.append(model.parameters[param])
+    return np.array(parameters)
+    
 # Standard template for importing data
 def template_importData(model, fileName):
     data = np.loadtxt(fileName, delimiter=",")

@@ -18,7 +18,9 @@ def run():
     systemModel.generateData()
 
     # Inference model
-    inferenceModel = getInferenceModel(systemModel, parametersToEstimate = ('mu', 'phi', 'sigma_v'))
+    inferenceModel = getInferenceModel(systemModel, 
+                                       parametersToEstimate = ('mu', 'phi', 'sigma_v'),
+                                       unRestrictedParameters = True)
 
     # Kalman filter
     kalman = kalmanMethods.FilteringSmoothing()
@@ -30,19 +32,19 @@ def run():
     kalman.settings = kalmanSettings
     
     # Metropolis-Hastings
-    stepSize = 1.125 / np.sqrt(3.0**(1.0 / 3.0)) / systemModel.noObservations
-    posteriorCovariance = np.array(( 0.00896405, -0.00202991, -0.08106153,
-                                    -0.00202991,  0.0025671,   0.04450741,
-                                    -0.08106153,  0.04450741,  1.44413436)).reshape((3,3))
-    mhSettings = {'noIters': 1000, 
-                  'noBurnInIters': 200, 
+    stepSize = 0.015 * 1.125 / np.sqrt(len(inferenceModel.parametersToEstimate)**(1.0 / 3.0))
+    posteriorCovariance = np.array((  0.02323771, -0.0047647,   0.02189193,
+                                     -0.0047647,   0.00317307, -0.0088695,
+                                      0.02189193, -0.0088695,   0.05392023)).reshape((3,3))
+    mhSettings = {'noIters': 5000, 
+                  'noBurnInIters': 1000, 
                   'stepSize': stepSize, 
-                  'initialParameters': (0.0, 0.0, 0.5), 
+                  'initialParameters': (0.5, 0.5, 0.5), 
                   'hessianEstimate': posteriorCovariance,
                   'verbose': False,
                   'printWarningsForUnstableSystems': False
                   }
     mhSampler = metropolisHastings.ParameterEstimator(mhSettings)
     mhSampler.run(kalman, inferenceModel, 'mh1')
-    #mhSampler.plot()
+    mhSampler.plot()
 

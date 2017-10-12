@@ -42,10 +42,15 @@ class ParameterEstimator(object):
         noParametersToEstimate = model.noParametersToEstimate
         noObservations = model.noObservations
 
+        if noBurnInIters >= noIters:
+            raise ValueError("metropolisHastings: noBurnInIters cannot be larger or equal to noIters.")
+
         self.noParametersToEstimate = noParametersToEstimate
         self.parameters = np.zeros((noIters, noParametersToEstimate))
+        self.parametersUntransformed = np.zeros((noIters, noParametersToEstimate))
         self.logPrior = np.zeros((noIters, 1))
         self.logLikelihood = np.zeros((noIters, 1))
+        self.logJacobian = np.zeros((noIters, 1))
         self.states = np.zeros((noIters, noObservations))
         
         self.acceptProb = np.zeros((noIters, 1))
@@ -55,6 +60,7 @@ class ParameterEstimator(object):
         self.gradient = np.zeros((noIters, noParametersToEstimate))
         self.proposedGradient = np.zeros((noParametersToEstimate))
         self.hessian = np.zeros((noIters, noParametersToEstimate, noParametersToEstimate))       
+        self.proposedHessian = np.zeros((noParametersToEstimate, noParametersToEstimate))       
         self.naturalGradient = np.zeros((noIters, noParametersToEstimate))
         self.proposedNaturalGradient = np.zeros((noParametersToEstimate))
 
@@ -66,9 +72,10 @@ class ParameterEstimator(object):
 
             samplingHelpers.proposeParameters(self)
             model.storeParameters(self.proposedParameters)
+            model.transformParameters()
 
             samplingHelpers.computeAcceptanceProbability(self, stateEstimator, model)
-
+            
             if (np.random.random(1) < self.currentAcceptanceProbability):
                 self.acceptParameters()
             else:
@@ -79,10 +86,10 @@ class ParameterEstimator(object):
             #self.printSimulationToFile()
 
         self.results = {}
-        self.results.update({'parameterMeanEstimates': np.mean(self.parameters[noBurnInIters:noIters, :], axis=0)})
+        self.results.update({'parameterMeanEstimates': np.mean(self.parametersUntransformed[noBurnInIters:noIters, :], axis=0)})
         self.results.update({'stateMeanEstimates': np.mean(self.states[noBurnInIters:noIters, :], axis=0)})
         self.results.update({'stateVarEstimates': np.var(self.states[noBurnInIters:noIters, :], axis=0)})
-        self.results.update({'parameterTrace': self.parameters[noBurnInIters:noIters, :]})
+        self.results.update({'parameterTrace': self.parametersUntransformed[noBurnInIters:noIters, :]})
 
     def plot(self):
         helpers.plotResults(self)
@@ -90,6 +97,8 @@ class ParameterEstimator(object):
     def acceptParameters(self):
         iteration = self.currentIteration
         self.parameters[iteration, :] = self.proposedParameters
+        self.parametersUntransformed[iteration, :] = self.proposedParametersUntransformed
+        self.logJacobian[iteration] = self.proposedLogJacobian
         self.logPrior[iteration, :] = self.proposedLogPrior
         self.logLikelihood[iteration, :] = self.proposedLogLikelihood
         self.states[iteration, :] = self.proposedStates
@@ -102,6 +111,8 @@ class ParameterEstimator(object):
     def rejectParameters(self):
         iteration = self.currentIteration
         self.parameters[iteration, :] = self.parameters[iteration - 1, :]
+        self.parametersUntransformed[iteration, :] = self.parametersUntransformed[iteration - 1, :]
+        self.logJacobian[iteration] = self.logJacobian[iteration - 1]
         self.logPrior[iteration, :] = self.logPrior[iteration - 1, :]
         self.logLikelihood[iteration, :] = self.logLikelihood[iteration - 1, :]
         self.states[iteration, :] = self.states[iteration - 1, :]
