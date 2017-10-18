@@ -28,7 +28,7 @@ def printProgressReportToScreen(sampler):
     print(["%.4f" % v for v in sampler.parametersUntransformed[iteration - 1, :]])
     print("")
     print(" Proposed next state of the Markov chain:         ")
-    print(["%.4f" % v for v in sampler.proposedParameters])
+    print(["%.4f" % v for v in sampler.proposedParametersUntransformed[iteration, :]])
     print("")
     print(" Current posterior mean estimate: ")
     print(["%.4f" % v for v in np.mean(sampler.parametersUntransformed[range(iteration), :], axis=0)])
@@ -44,11 +44,12 @@ def printProgressReportToScreen(sampler):
     #     print(str(np.log(sampler.calcSJD())))
     if 'memoryLength' in sampler.settings:
         if (iteration > sampler.settings['memoryLength']):
-            print("")
-            print(" Mean number of samples for Hessian estimate:           ")
             noEffectiveSamples = sampler.noEffectiveSamples[range(iteration)]
             idx = np.where(noEffectiveSamples > 0)
-            print("%.4f" % np.mean(noEffectiveSamples[idx]))
+            if idx:
+                print("")
+                print(" Mean number of samples for Hessian estimate:           ")
+                print("%.4f" % np.mean(noEffectiveSamples[idx]))
     print("################################################################################################ ")
 
 # Check if dirs for outputs exists, otherwise create them

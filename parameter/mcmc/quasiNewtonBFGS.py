@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("error")
+
 import numpy as np
 from scipy.stats import multivariate_normal
 
@@ -47,7 +50,7 @@ def initialiseParameters(mh, state, model):
         state.smoother(model)
         mh.logLikelihood[0] = state.logLikelihood
         mh.gradient[0, :] = state.gradientInternal
-        mh.hessian[0, :, :], mh.naturalGradient[0, :] = estimateHessian(mh)
+        mh.hessian[0, :, :], mh.naturalGradient[0, :] = estimateHessian(mh, state.gradientInternal)
         mh.states[0, :] = state.filteredStateEstimate
         mh.acceptProb[0] = 1.0
         mh.parametersUntransformed[0, :] = mh.settings['initialParameters']
@@ -70,11 +73,17 @@ def proposeParameters(mh):
     else:
         perturbation = np.matmul(proposalVariance, np.random.multivariate_normal(np.zeros(noParameters), np.diag(np.ones(noParameters))))
     
-    gradientContribution = 0.5 * stepSize**2 * currentNaturalGradient
-    mh.proposedParameters = currentParameters + gradientContribution + perturbation
+    if mh.currentIteration > mh.settings['memoryLength']:
+        gradientContribution = 0.5 * stepSize**2 * currentNaturalGradient
+    else:
+        gradientContribution = 0.0
+
+    mh.proposedParameters[mh.currentIteration] = currentParameters + truncateContribution(gradientContribution + perturbation, limit = 0.10)
 
     if mh.settings['verbose']:
-        print("Proposing parameters: " + str(mh.proposedParameters) + " given " + str(currentParameters) + ".")
+        print("Proposing parameters: " + str(mh.proposedParameters[mh.currentIteration]) + " given " + str(currentParameters) + ".")
+        print("Gradient contribution is: " + str(gradientContribution) + ".")
+        print("Perturbation is: " + str(perturbation) + ".")
 
 def computeAcceptanceProbability(mh, state, model):
     noParameters = mh.settings['noParametersToEstimate']
@@ -96,52 +105,72 @@ def computeAcceptanceProbability(mh, state, model):
         state.smoother(model)
         proposedLogLikelihood = state.logLikelihood
         proposedGradient = state.gradientInternal
-        (proposedHessian, proposedNaturalGradient) = estimateHessian(mh)
+        (proposedHessian, proposedNaturalGradient) = estimateHessian(mh, proposedGradient)
+
+        if mh.settings['verbose']:
+            if mh.currentIteration > mh.settings['memoryLength']:
+                print(np.linalg.inv(np.linalg.cholesky(correctHessian(state.hessianInternal))))
+                print(proposedHessian)
+
         proposedStates = state.filteredStateEstimate
         
-        if isPositiveSemidefinite(proposedHessian):
-            logPriorDifference = proposedLogPrior - currentLogPrior
-            logLikelihoodDifference = proposedLogLikelihood - currentLogLikelihood
+        if np.sum(np.diag(proposedHessian) < 0.0) > 0.0:
+            if mh.settings['verbose']:
+                print("Rejecting as Cholesky gives diagonal with negative values.")
+                print(np.linalg.eig(np.matmul(proposedHessian, proposedHessian))[0])
+            mh.currentAcceptanceProbability = 0.0
+            return
+        
+        logPriorDifference = proposedLogPrior - currentLogPrior
+        logLikelihoodDifference = proposedLogLikelihood - currentLogLikelihood
 
-            proposalMean = currentParameters
+        proposalMean = currentParameters
+        if mh.currentIteration > mh.settings['memoryLength']:
             proposalMean += 0.5 * stepSize**2 * currentNaturalGradient
-            proposalVariance = stepSize * currentHessian
-            logProposalProposed = multivariateGaussianLogPDF(proposedParameters, proposalMean, proposalVariance)
 
-            proposalMean = proposedParameters
+        proposalVariance = stepSize * currentHessian
+        logProposalProposed = multivariateGaussianLogPDF(proposedParameters, proposalMean, proposalVariance)
+
+        proposalMean = proposedParameters
+        if mh.currentIteration > mh.settings['memoryLength']:
             proposalMean += 0.5 * stepSize**2 * proposedNaturalGradient
-            proposalVariance = stepSize * proposedHessian
-            logProposalCurrent = multivariateGaussianLogPDF(currentParameters, proposalMean, proposalVariance)
+        proposalVariance = stepSize * proposedHessian
+        logProposalCurrent = multivariateGaussianLogPDF(currentParameters, proposalMean, proposalVariance)
 
-            logProposalDifference = logProposalProposed - logProposalCurrent
-            logJacobianDifference = proposedLogJacobian - currentLogJacobian
+        logProposalDifference = logProposalProposed - logProposalCurrent
+        logJacobianDifference = proposedLogJacobian - currentLogJacobian
+
+        try:
             acceptProb = np.exp(logPriorDifference + logLikelihoodDifference + logProposalDifference + logJacobianDifference)
-        else:
-            acceptProb = 0.0
+        except:
+            if mh.settings['verbose']:
+                print("Rejecting as overflow occured.")
+            acceptProb = 1.0
 
         if mh.settings['verbose']:
             print("proposedLogLikelihood: " + str(proposedLogLikelihood) + ".")
             print("logPriorDifference: " + str(logPriorDifference) + ".")
             print("logLikelihoodDifference: " + str(logLikelihoodDifference) + ".")
             print("logProposalDifference: " + str(logProposalDifference) + ".")
-            print("acceptProb: " + str(acceptProb) + ".")            
+            print("acceptProb: " + str(acceptProb) + ".")
+            #input("Press Enter to continue...")
 
-        mh.proposedParametersUntransformed = proposedParameters
-        mh.proposedLogJacobian = proposedLogJacobian
-        mh.proposedLogPrior = proposedLogPrior
-        mh.proposedLogLikelihood = proposedLogLikelihood
-        mh.proposedStates = proposedStates
-        mh.proposedGradient = proposedGradient
-        mh.proposedNaturalGradient = proposedNaturalGradient
-        mh.proposedHessian = proposedHessian
-        mh.currentAcceptanceProbability = np.min((1.0, acceptProb))
+        mh.proposedParametersUntransformed[mh.currentIteration, :] = proposedParameters
+        mh.proposedLogJacobian[mh.currentIteration] = proposedLogJacobian
+        mh.proposedLogPrior[mh.currentIteration] = proposedLogPrior
+        mh.proposedLogLikelihood[mh.currentIteration] = proposedLogLikelihood
+        mh.proposedStates[mh.currentIteration, :] = proposedStates
+        mh.proposedGradient[mh.currentIteration, :] = proposedGradient
+        mh.proposedNaturalGradient[mh.currentIteration, :] = proposedNaturalGradient
+        mh.proposedHessian[mh.currentIteration, :, :] = proposedHessian
+        mh.acceptProb[mh.currentIteration] = np.min((1.0, acceptProb))
     else:
         mh.currentAcceptanceProbability = 0.0
 
         if mh.settings['printWarningsForUnstableSystems']:
             print("Proposed parameters: " + str(mh.proposedParameters) + " results in an unstable system so rejecting.")
 
-def estimateHessian(mh):
+def estimateHessian(mh, proposedGradient):
     memoryLength = mh.settings['memoryLength']
     baseStepSize = mh.settings['baseStepSize']
     initialHessian = mh.settings['initialHessian']
@@ -153,29 +182,37 @@ def estimateHessian(mh):
     if mh.currentIteration < memoryLength:
         inverseHessianEstimate = identityMatrix * baseStepSize
         inverseHessianEstimateSquared = np.matmul(inverseHessianEstimate, inverseHessianEstimate.transpose())
-        naturalGradient = np.dot(inverseHessianEstimateSquared, mh.gradient[mh.currentIteration - 1, :])
+        naturalGradient = np.dot(inverseHessianEstimateSquared, proposedGradient)
         return inverseHessianEstimate, naturalGradient
     
     # Extract parameters and gradidents
+    # TODO: Using proposed instead of accepted history in BFGS
     idx = range(mh.currentIteration - memoryLength, mh.currentIteration)
     parameters = mh.parameters[idx, :]
     gradients = mh.gradient[idx, :]
     hessians = mh.hessian[idx, :, :]
     accepted = mh.accepted[idx]
-    target = mh.logPrior[idx] + mh.logLikelihood[idx]
+    target = np.concatenate(mh.logPrior[idx] + mh.logLikelihood[idx]).reshape(-1)
+
+    # idx = range(mh.currentIteration - memoryLength, mh.currentIteration)
+    # parameters = mh.proposedParameters[idx, :]
+    # gradients = mh.proposedGradient[idx, :]
+    # hessians = mh.proposedHessian[idx, :, :]
+    # target = np.concatenate(mh.proposedLogPrior[idx] + mh.proposedLogLikelihood[idx]).reshape(-1)
 
     # Keep only unique parameters and gradients
+    # TODO: Using proposed instead of accepted history in BFGS
     idx = np.where(accepted > 0)[0]
     if len(idx) == 0:
         inverseHessianEstimate = identityMatrix * baseStepSize
         inverseHessianEstimateSquared = np.matmul(inverseHessianEstimate, inverseHessianEstimate.transpose())
-        naturalGradient = np.dot(inverseHessianEstimateSquared, mh.gradient[mh.currentIteration - 1, :])
+        naturalGradient = np.dot(inverseHessianEstimateSquared, proposedGradient)
         return inverseHessianEstimate, naturalGradient
 
     parameters = parameters[idx, :]
     gradients = gradients[idx, :]
     hessians = hessians[idx, :, :]
-    target = np.concatenate(target[idx]).reshape(-1)    
+    target = target[idx]
     accepted = accepted[idx, :]
 
     # Sort and compute differences
@@ -187,12 +224,20 @@ def estimateHessian(mh):
     parametersDiff = np.zeros((len(idx) - 1, noParameters))
     gradientsDiff = np.zeros((len(idx) - 1, noParameters))
 
-    # TODO: Uncertain about the sign of the gradients
     for i in range(len(idx) - 1):
         parametersDiff[i, :] = parameters[i+1, :] - parameters[i, :]
         gradientsDiff[i, :] = gradients[i+1, :] - gradients[i, :] + lam * np.matmul(hessians[i, :, :], gradients[i, :])
     
-    inverseHessianEstimate = initialHessian * identityMatrix
+    if initialHessian is 'scaledProposedGradient':
+        inverseHessianEstimate = identityMatrix * np.sqrt(baseStepSize / np.linalg.norm(proposedGradient, 2))
+
+    if initialHessian is 'scaledCurvature':
+        scaledCurvature = np.dot(parametersDiff[0], gradientsDiff[0]) * np.dot(gradientsDiff[0], gradientsDiff[0])
+        inverseHessianEstimate = identityMatrix * np.sqrt(np.abs(scaledCurvature))
+
+    if isinstance(initialHessian, float):
+        inverseHessianEstimate = initialHessian * identityMatrix
+    
     noEffectiveSamples = 0
 
     for i in range(parametersDiff.shape[0]):
@@ -218,8 +263,13 @@ def estimateHessian(mh):
         if doUpdate:
             quadraticFormSB = np.dot(np.dot(parametersDiff[i], B), parametersDiff[i])
             t = parametersDiff[i] / quadraticFormSB
+
+            u1 = quadraticFormSB / np.dot(parametersDiff[i], r)
+
+            if u1 < 0.0:
+                continue
             
-            u1 = np.sqrt(quadraticFormSB / np.dot(parametersDiff[i], r))
+            u1 = np.sqrt(u1)
             u2 = np.dot(B, parametersDiff[i])
             u = u1 * r + u2
 
@@ -227,10 +277,9 @@ def estimateHessian(mh):
             noEffectiveSamples += 1
     
     mh.noEffectiveSamples[mh.currentIteration] = noEffectiveSamples
-
+    #print("Hessian estimated using " + str(noEffectiveSamples) + " samples.")
     inverseHessianEstimateSquared = np.matmul(inverseHessianEstimate, inverseHessianEstimate.transpose())
-    #naturalGradient = np.dot(inverseHessianEstimateSquared, mh.gradient[mh.currentIteration - 1, :])
-    naturalGradient = np.zeros(3)
+    naturalGradient = np.dot(inverseHessianEstimateSquared, proposedGradient)
     return inverseHessianEstimate, naturalGradient
 
 
@@ -265,3 +314,7 @@ def multivariateGaussianLogPDF(x, mu, SigmaChol):
     term3 = -0.5 * np.dot(np.dot(x - mu, SigmaInverse), x - mu)
     
     return term1 + term2 + term3
+
+def truncateContribution(x, limit):
+    sign = np.sign(x)
+    return sign * np.min((limit, np.abs(x)))

@@ -122,8 +122,11 @@ class model(object):
             jacobian.update({'sigma_v': np.log(self.parameters['sigma_v']) })
             jacobian.update({'sigma_e': np.log(self.parameters['sigma_e']) })
             output = 0.0
-            for param in self.parametersToEstimate:
-                output += jacobian[param]
+            if self.noParametersToEstimate > 1:
+                for param in self.parametersToEstimate:
+                    output += jacobian[param]
+            else:
+                output += jacobian[self.parametersToEstimate]
         else: 
             output = 0.0
         return(output)

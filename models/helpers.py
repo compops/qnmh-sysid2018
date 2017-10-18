@@ -7,7 +7,10 @@ def getInferenceModel(oldModel, parametersToEstimate, unRestrictedParameters = T
     newModel.modelType = "Inference model"
     if unRestrictedParameters:
         newModel.parameterisation = "unrestricted"
-    newModel.noParametersToEstimate = len(parametersToEstimate)
+    if isinstance(parametersToEstimate, str):
+        newModel.noParametersToEstimate = 1
+    else:
+        newModel.noParametersToEstimate = len(parametersToEstimate)
     newModel.parametersToEstimate = parametersToEstimate
     newModel.trueParameters = oldModel.parameters
     
@@ -20,9 +23,8 @@ def getInferenceModel(oldModel, parametersToEstimate, unRestrictedParameters = T
 # Store the parameters into the struct
 def template_storeParameters(model, newParameters):
     model.parameters = model.trueParameters
-    if isinstance(newParameters, float):
-        for param in model.parametersToEstimate:
-            model.parameters[param] = newParameters
+    if isinstance(newParameters, float) or (isinstance(newParameters, np.ndarray) and len(newParameters) == 1):
+        model.parameters[model.parametersToEstimate] = newParameters
     else:
         for param in model.parametersToEstimate:
             model.parameters[param] = newParameters[model.parametersToEstimate.index(param)]
@@ -30,8 +32,11 @@ def template_storeParameters(model, newParameters):
 # Store the parameters into the struct
 def template_getParameters(model):
     parameters = []
-    for param in model.parametersToEstimate:
-        parameters.append(model.parameters[param])
+    if isinstance(model.parametersToEstimate, str):
+        parameters.append(model.parameters[model.parametersToEstimate])
+    else:
+        for param in model.parametersToEstimate:
+            parameters.append(model.parameters[param])
     return np.array(parameters)
     
 # Standard template for importing data

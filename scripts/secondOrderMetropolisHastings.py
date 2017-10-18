@@ -9,7 +9,7 @@ from parameter.mcmc import metropolisHastings
 def run():
     # System model
     systemModel = linearGaussianModelWithMean.model()
-    systemModel.parameters['mu'] = 0.2
+    systemModel.parameters['mu'] = 1.0
     systemModel.parameters['phi'] = 0.8
     systemModel.parameters['sigma_v'] = 1.0
     systemModel.parameters['sigma_e'] = 0.1
@@ -19,8 +19,8 @@ def run():
 
     # Inference model
     inferenceModel = getInferenceModel(systemModel, 
-                                       parametersToEstimate = ('mu', 'phi', 'sigma_v'),
-                                       unRestrictedParameters = True)
+                                       parametersToEstimate = ('mu'),
+                                       unRestrictedParameters = False)
 
     # Kalman filter
     kalman = kalmanMethods.FilteringSmoothing()
@@ -32,10 +32,10 @@ def run():
     kalman.settings = kalmanSettings
     
     # Metropolis-Hastings
-    mhSettings = {'noIters': 5000, 
-                  'noBurnInIters': 1000, 
+    mhSettings = {'noIters': 1000, 
+                  'noBurnInIters': 100, 
                   'stepSize': 1.0, 
-                  'initialParameters': (0.2, 0.8, 1.0), 
+                  'initialParameters': 0.2,
                   'verbose': False,
                   'printWarningsForUnstableSystems': False
                   }

@@ -106,13 +106,13 @@ def computeAcceptanceProbability(mh, state, model):
             print("logProposalDifference: " + str(logProposalDifference) + ".")
             print("acceptProb: " + str(acceptProb) + ".")            
         
-        mh.proposedParametersUntransformed = proposedParametersUntransformed
-        mh.proposedLogJacobian = proposedLogJacobian
-        mh.proposedLogPrior = proposedLogPrior
-        mh.proposedLogLikelihood = proposedLogLikelihood
-        mh.proposedStates = proposedStates
-        mh.proposedGradient = proposedGradient
-        mh.currentAcceptanceProbability = np.min((1.0, acceptProb))
+        mh.proposedParametersUntransformed[mh.currentIteration, :] = proposedParameters
+        mh.proposedLogJacobian[mh.currentIteration] = proposedLogJacobian
+        mh.proposedLogPrior[mh.currentIteration] = proposedLogPrior
+        mh.proposedLogLikelihood[mh.currentIteration] = proposedLogLikelihood
+        mh.proposedStates[mh.currentIteration, :] = proposedStates
+        mh.proposedGradient[mh.currentIteration, :] = proposedGradient
+        mh.acceptProb[mh.currentIteration] = np.min((1.0, acceptProb))
     else:
         mh.currentAcceptanceProbability = 0.0
 
