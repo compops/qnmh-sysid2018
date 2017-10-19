@@ -1,10 +1,15 @@
 import numpy as np
 import os
+import sys
+
+from scipy.linalg import eigh
+from scipy.stats._multivariate import _eigvalsh_to_eps
 from scipy.special import gammaln
+
 import matplotlib.pylab as plt
 from palettable.colorbrewer.qualitative import Dark2_8
 
-def checkSettingsHelper(sampler):
+def checkSettings(sampler):
     if not 'noIters' in sampler.settings:
         sampler.settings.update({'noIters': 1000})
         print("Missing settings: noIters, defaulting to " + str(sampler.settings['noIters']) + ".")
@@ -16,6 +21,27 @@ def checkSettingsHelper(sampler):
     if not 'stepSize' in sampler.settings:
         sampler.settings.update({'stepSize': 0.10})
         print("Missing settings: stepSize, defaulting to " + str(sampler.settings['stepSize']) + ".")      
+
+    if not 'noIters' in sampler.settings:
+        sampler.settings.update({'noIters': 1000})
+        print("Missing settings: noIterself, defaulting to " + str(sampler.settings['noIters']) + ".")
+
+    if not 'noBurnInIters' in sampler.settings:
+        sampler.settings.update({'noBurnInIters': 250})
+        print("Missing settings: noBurnInIters, defaulting to " + str(sampler.settings['noBurnInIters']) + ".")
+
+    if not 'stepSize' in sampler.settings:
+        sampler.settings.update({'stepSize': 1.0})
+        print("Missing settings: stepSize, defaulting to " + str(sampler.settings['stepSize']) + ".")   
+
+    if not 'iterationsBetweenProgressReports' in sampler.settings: 
+        sampler.settings.update({'nProgressReport': 100})
+        print("Missing settings: nProgressReport, defaulting to " + str(sampler.settings['nProgressReport']) + ".")   
+
+    if not 'printWarningsForUnstableSystems' in sampler.settings: 
+        sampler.settings.update({'printWarningsForUnstableSystems': False})
+        print("Missing settings: printWarningsForUnstableSystems, defaulting to " + str(sampler.settings['printWarningsForUnstableSystems']) + ".")   
+
 
 # Print small progress reports
 def printProgressReportToScreen(sampler):
@@ -58,10 +84,20 @@ def ensure_dir(f):
     if not os.path.exists(d):
         os.makedirs(d)
 
-
 # Check if a matrix is positive semi-definite by checking for negative eigenvalues
-def isPSD(x):
+def isPositiveSemiDefinite(x):
     return np.all(np.linalg.eigvals(x) > 0)
+
+# Check if a matrix is singular by checking for negative eigenvalues
+def isHessianValid(x):
+    s, u = eigh(x, lower=True, check_finite=True)
+    eps = _eigvalsh_to_eps(s, None, None)
+    if np.min(s) < -eps:
+        return False
+    d = s[s > eps]
+    if len(d) < len(s):
+        return False
+    return True
 
 # Zero-variance post processing with linear correction
 def zvpost_linear_prototype(sampler):
@@ -101,3 +137,27 @@ def plotResults(sampler):
         plt.xlabel(parameterNames[i])
     plt.show()
 
+
+def truncateContribution(x, limit):
+    if not limit:
+        return x
+
+    if isinstance(x, float):
+        sign = np.sign(x)
+        output = sign * np.min((limit, np.abs(x)))
+    
+    if isinstance(x, np.ndarray):
+        output = np.zeros(len(x))
+        for i in range(len(x)):
+            sign = np.sign(x[i])
+            output[i] = sign * np.min((limit, np.abs(x[i])))
+    
+    return output
+
+# Calculate the log-pdf of a multivariate Gaussian with mean vector mu and covariance matrix S
+def logPDFGaussian(x, mu, S):
+    nx = len(S)
+    norm_coeff = nx * np.log(2.0 * np.pi) + np.linalg.slogdet(S)[1]
+    err = x - mu
+    numerator = np.dot(np.dot(err, np.linalg.pinv(S)), err.transpose())
+    return -0.5 * (norm_coeff + numerator)

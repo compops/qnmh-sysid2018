@@ -38,12 +38,11 @@ def run():
                   'initialParameters': (0.0, 0.5, 1.0), 
                   'verbose': False,
                   'hessianEstimate': 'kalman',
+                  'SR1UpdateLimit': '1e-8',
                   'printWarningsForUnstableSystems': True,
-                  'baseStepSize': 1e-2,
                   'memoryLength': 20,
                   'initialHessian': 1e-2,
-                  'trustRegionSize': 0.01,
-                  'useDampedBFGS' : False
+                  'trustRegionSize': 0.01
                   }
     mhSampler = metropolisHastings.ParameterEstimator(mhSettings)
     mhSampler.run(kalman, inferenceModel, 'mh2')
