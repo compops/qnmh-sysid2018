@@ -19,7 +19,7 @@ def run():
 
     # Inference model
     inferenceModel = getInferenceModel(systemModel, 
-                                       parametersToEstimate = ('phi'),
+                                       parametersToEstimate = ('mu', 'phi', 'sigma_v'),
                                        unRestrictedParameters = True)
 
     # Kalman filter
@@ -32,20 +32,21 @@ def run():
     kalman.settings = kalmanSettings
     
     # Metropolis-Hastings
-    mhSettings = {'noIters': 500, 
-                  'noBurnInIters': 100, 
-                  'stepSize': 1.0, 
-                  'initialParameters': (0.7), 
+    mhSettings = {'noIters': 1000, 
+                  'noBurnInIters': 200, 
+                  'stepSize': 0.8, 
+                  'initialParameters': (0.0, 0.5, 1.0), 
                   'verbose': False,
-                  'printWarningsForUnstableSystems': False,
+                  'hessianEstimate': 'kalman',
+                  'printWarningsForUnstableSystems': True,
                   'baseStepSize': 1e-2,
                   'memoryLength': 20,
-                  'initialHessian': 'scaledProposedGradient',
-                  'trustRegionSize': 0,
+                  'initialHessian': 1e-2,
+                  'trustRegionSize': 0.01,
                   'useDampedBFGS' : False
                   }
     mhSampler = metropolisHastings.ParameterEstimator(mhSettings)
-    mhSampler.run(kalman, inferenceModel, 'qmh')
+    mhSampler.run(kalman, inferenceModel, 'mh2')
     mhSampler.plot()
 
     return(mhSampler)

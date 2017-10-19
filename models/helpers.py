@@ -12,7 +12,7 @@ def getInferenceModel(oldModel, parametersToEstimate, unRestrictedParameters = T
     else:
         newModel.noParametersToEstimate = len(parametersToEstimate)
     newModel.parametersToEstimate = parametersToEstimate
-    newModel.trueParameters = oldModel.parameters
+    newModel.trueParameters = copy.deepcopy(oldModel.parameters)
     
     newModel.parametersToEstimateIndex = []
     for param in newModel.parameters.keys():
@@ -20,17 +20,39 @@ def getInferenceModel(oldModel, parametersToEstimate, unRestrictedParameters = T
             newModel.parametersToEstimateIndex.append(parametersToEstimate.index(param))
     return(newModel)
 
-# Store the parameters into the struct
-def template_storeParameters(model, newParameters):
-    model.parameters = model.trueParameters
+# Store unrestricted parameters into the struct and update the restricted
+def template_storeUnrestrictedParameters(model, newParameters):
+    model.parameters = copy.deepcopy(model.trueParameters)
+    model.transformParametersToUnrestricted()
     if isinstance(newParameters, float) or (isinstance(newParameters, np.ndarray) and len(newParameters) == 1):
-        model.parameters[model.parametersToEstimate] = newParameters
+        model.unrestrictedParameters[model.parametersToEstimate] = float(newParameters)
     else:
         for param in model.parametersToEstimate:
-            model.parameters[param] = newParameters[model.parametersToEstimate.index(param)]
+            model.unrestrictedParameters[param] = float(newParameters[model.parametersToEstimate.index(param)])
+    model.transformParametersFromUnrestricted()
 
-# Store the parameters into the struct
-def template_getParameters(model):
+# Store restricted parameters into the struct and update the unrestricted
+def template_storeRestrictedParameters(model, newParameters):
+    model.parameters = copy.deepcopy(model.trueParameters)
+    if isinstance(newParameters, float) or (isinstance(newParameters, np.ndarray) and len(newParameters) == 1):
+        model.parameters[model.parametersToEstimate] = float(newParameters)
+    else:
+        for param in model.parametersToEstimate:
+            model.parameters[param] = float(newParameters[model.parametersToEstimate.index(param)])
+    model.transformParametersToUnrestricted()
+
+# Get the unrestricted parameters from the struct
+def template_getUnrestrictedParameters(model):
+    parameters = []
+    if isinstance(model.parametersToEstimate, str):
+        parameters.append(model.unrestrictedParameters[model.parametersToEstimate])
+    else:
+        for param in model.parametersToEstimate:
+            parameters.append(model.unrestrictedParameters[param])
+    return np.array(parameters)
+
+# Get the Restricted parameters from the struct
+def template_getRestrictedParameters(model):
     parameters = []
     if isinstance(model.parametersToEstimate, str):
         parameters.append(model.parameters[model.parametersToEstimate])
@@ -38,7 +60,7 @@ def template_getParameters(model):
         for param in model.parametersToEstimate:
             parameters.append(model.parameters[param])
     return np.array(parameters)
-    
+
 # Standard template for importing data
 def template_importData(model, fileName):
     data = np.loadtxt(fileName, delimiter=",")

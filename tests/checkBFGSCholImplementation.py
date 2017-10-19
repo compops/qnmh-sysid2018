@@ -56,21 +56,42 @@ for i in range(len(idx) - 1):
     gradientsDiff[i, :] = gradients[i+1, :] - gradients[i, :]
     print(np.dot(parametersDiff[i], gradientsDiff[i]))
 
-inverseHessianEstimate = 0.0001 * identityMatrix
-i = 4
+inverseHessianEstimate = initialHessian * identityMatrix
+noEffectiveSamples = 0
 
-quadraticFormSB = np.dot(np.dot(parametersDiff[i], inverseHessianEstimate), parametersDiff[i])
-curvatureCondition = np.dot(parametersDiff[i], gradientsDiff[i])
+for i in range(parametersDiff.shape[0]):
+    B = np.matmul(inverseHessianEstimate, inverseHessianEstimate.transpose())
+    doUpdate = False
 
-term1 = (curvatureCondition + quadraticFormSB) / curvatureCondition**2
-term1 *= np.outer(parametersDiff[i], parametersDiff[i])
+    if True:
+        term1 = np.dot(parametersDiff[i], gradientsDiff[i])
+        term2 = np.dot(np.dot(parametersDiff[i], B), parametersDiff[i])
 
-term2 = np.dot(np.dot(inverseHessianEstimate, gradientsDiff[i]), parametersDiff[i])
-term2 += np.dot(np.dot(parametersDiff[i], gradientsDiff[i]), inverseHessianEstimate)
-term2 /= curvatureCondition
+        if (term1 > 0.2 * term2):
+            theta = 1.0
+        else:
+            theta = 0.8 * term2 / (term2 - term1)
+        
+        r = theta * gradientsDiff[i] + (1.0 - theta) * np.dot(B, parametersDiff[i])
+        doUpdate = True
+    else:
+        if np.dot(parametersDiff[i], gradientsDiff[i]) > 0:
+            doUpdate = True
+            r = gradientsDiff[i]
 
-inverseHessianEstimate += term1 - term2
-noEffectiveSamples += 1
+    if doUpdate:
+        quadraticFormSB = np.dot(np.dot(parametersDiff[i], B), parametersDiff[i])
+        t = parametersDiff[i] / quadraticFormSB
+        
+        u1 = np.sqrt(quadraticFormSB / np.dot(parametersDiff[i], r))
+        u2 = np.dot(B, parametersDiff[i])
+        u = u1 * r + u2
 
-noEffectiveSamples[currentIteration] = noEffectiveSamples
-naturalGradient = np.dot(inverseHessianEstimate, proposedGradient)
+        inverseHessianEstimate = np.matmul(identityMatrix - np.outer(u, t), inverseHessianEstimate)            
+        noEffectiveSamples += 1
+
+mh.noEffectiveSamples[currentIteration] = noEffectiveSamples
+
+inverseHessianEstimateSquared = np.dot(inverseHessianEstimate, inverseHessianEstimate.transpose())
+naturalGradient = np.dot(inverseHessianEstimateSquared, allGradients[currentIteration, :])
+return inverseHessianEstimate, naturalGradient

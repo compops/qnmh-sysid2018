@@ -78,10 +78,10 @@ def proposeParameters(mh):
     else:
         gradientContribution = 0.0
 
-    mh.proposedParameters[mh.currentIteration] = currentParameters + truncateContribution(gradientContribution + perturbation, limit = 0.10)
+    mh.proposedParameters[mh.currentIteration, :] = currentParameters + truncateContribution(gradientContribution + perturbation, limit = 0.10)
 
     if mh.settings['verbose']:
-        print("Proposing parameters: " + str(mh.proposedParameters[mh.currentIteration]) + " given " + str(currentParameters) + ".")
+        print("Proposing parameters: " + str(mh.proposedParameters[mh.currentIteration, :]) + " given " + str(currentParameters) + ".")
         print("Gradient contribution is: " + str(gradientContribution) + ".")
         print("Perturbation is: " + str(perturbation) + ".")
 

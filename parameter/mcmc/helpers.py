@@ -25,13 +25,13 @@ def printProgressReportToScreen(sampler):
     print(" Iteration: " + str(iteration + 1) + " of : " + str(sampler.settings['noIters']) + " completed.")
     print("")
     print(" Current state of the Markov chain:               ")
-    print(["%.4f" % v for v in sampler.parametersUntransformed[iteration - 1, :]])
+    print(["%.4f" % v for v in sampler.restrictedParameters[iteration - 1, :]])
     print("")
     print(" Proposed next state of the Markov chain:         ")
-    print(["%.4f" % v for v in sampler.proposedParametersUntransformed[iteration, :]])
+    print(["%.4f" % v for v in sampler.restrictedParameters[iteration, :]])
     print("")
     print(" Current posterior mean estimate: ")
-    print(["%.4f" % v for v in np.mean(sampler.parametersUntransformed[range(iteration), :], axis=0)])
+    print(["%.4f" % v for v in np.mean(sampler.restrictedParameters[range(iteration), :], axis=0)])
     print("")
     print(" Current acceptance rate:                         ")
     print("%.4f" % np.mean(sampler.accepted[range(iteration)]))
@@ -42,7 +42,7 @@ def printProgressReportToScreen(sampler):
     #     print("")
     #     print(" Current log-SJD value:                          ")
     #     print(str(np.log(sampler.calcSJD())))
-    if 'memoryLength' in sampler.settings:
+    if 'BFGS' in sampler.settings['hessianEstimate'] or 'SR1' in sampler.settings['hessianEstimate']:
         if (iteration > sampler.settings['memoryLength']):
             noEffectiveSamples = sampler.noEffectiveSamples[range(iteration)]
             idx = np.where(noEffectiveSamples > 0)
@@ -74,7 +74,7 @@ def zvpost_linear_prototype(sampler):
         Sigma = np.linalg.inv(covAll[0:3, 0:3])
         sigma = covAll[0:3, 3]
         ahat[:, i] = - np.dot(Sigma, sigma)
-    sampler.thzv = sampler.th[sampler.nBurnIn:sampler.nIter, :] + np.dot(z, ahat);
+    sampler.thzv = sampler.th[sampler.nBurnIn:sampler.nIter, :] + np.dot(z, ahat)
 
 # Logit transform
 def logit(x):
@@ -83,8 +83,6 @@ def logit(x):
 # Inverse logit transform
 def invlogit(x):
     return np.exp(x) / (1.0 + np.exp(x))
-
-
 
 def plotResults(sampler):
     noBins = int(np.floor(np.sqrt(len(sampler.results['parameterTrace'][:, 0]))))

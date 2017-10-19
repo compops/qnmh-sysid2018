@@ -14,6 +14,7 @@ class model(object):
     observations = []
     initialState = []
     parameters = {}
+    unrestrictedParameters = {}
     noParameters = 4
     prior = {'mu': (0.0, 0.2), 'phi': (0.9, 0.05), 'sigma_v': (0.2, 0.2), 'sigma_e': (2.0, 2.0)}
 
@@ -33,9 +34,6 @@ class model(object):
         return norm.logpdf(currentObservation, currentState, self.parameters['sigma_e'])
     
     def areParametersValid(self):
-        if self.parameterisation is 'unrestricted':
-            return True
-        
         out = True
         if(np.abs(self.parameters['phi']) > 1.0):
             out = False
@@ -90,49 +88,41 @@ class model(object):
             gradient.update({'sigma_e': self.parameters['sigma_e']**(-3) * py**2 - self.parameters['sigma_e']**(-1)   })
         return(gradient)         
 
-    def transformParameters(self):
-        if self.parameterisation is 'unrestricted':
-            if 'mu' in self.parametersToEstimate:
-                self.parameters['mu'] = self.parameters['mu']
-            if 'phi' in self.parametersToEstimate:                
-                self.parameters['phi'] = np.tanh(self.parameters['phi'])
-            if 'sigma_v' in self.parametersToEstimate:
-                self.parameters['sigma_v'] = np.exp(self.parameters['sigma_v'])
-            if 'sigma_e' in self.parametersToEstimate:                
-                self.parameters['sigma_e'] = np.exp(self.parameters['sigma_e'])
-            self.currentMode = "Parameters in restricted space"
+    def transformParametersToUnrestricted(self):
+        #print("transformParametersToUnrestricted, self.parameters: " + str(self.parameters))
+        self.unrestrictedParameters['mu'] = self.parameters['mu']
+        self.unrestrictedParameters['phi'] = np.arctanh(self.parameters['phi'])
+        self.unrestrictedParameters['sigma_v'] = np.log(self.parameters['sigma_v'])
+        self.unrestrictedParameters['sigma_e'] = np.log(self.parameters['sigma_e'])        
+        #print("transformParametersToUnrestricted, self.unrestrictedParameters: " + str(self.unrestrictedParameters))
     
-    def untransformParameters(self):
-        if self.parameterisation is 'unrestricted':    
-            if 'mu' in self.parametersToEstimate:    
-                self.parameters['mu'] = self.parameters['mu']
-            if 'phi' in self.parametersToEstimate:
-                self.parameters['phi'] = np.arctanh(self.parameters['phi'])
-            if 'sigma_v' in self.parametersToEstimate:                
-                self.parameters['sigma_v'] = np.log(self.parameters['sigma_v'])
-            if 'sigma_e' in self.parametersToEstimate:                
-                self.parameters['sigma_e'] = np.log(self.parameters['sigma_e'])
-            self.currentMode = "Parameters in unrestricted space"
-
+    def transformParametersFromUnrestricted(self):
+        #print("transformParametersFromUnrestricted, self.unrestrictedParameters: " + str(self.unrestrictedParameters))
+        self.parameters['mu'] = self.unrestrictedParameters['mu']
+        self.parameters['phi'] = np.tanh(self.unrestrictedParameters['phi'])
+        self.parameters['sigma_v'] = np.exp(self.unrestrictedParameters['sigma_v'])
+        self.parameters['sigma_e'] = np.exp(self.unrestrictedParameters['sigma_e'])
+        #print("transformParametersFromUnrestricted, self.parameters: " + str(self.parameters))
+    
     def logJacobian(self):
-        if self.parameterisation is 'unrestricted':  
-            jacobian = {}
-            jacobian.update({'mu': 0.0})
-            jacobian.update({'phi': np.log(1.0 - self.parameters['phi']**2) })
-            jacobian.update({'sigma_v': np.log(self.parameters['sigma_v']) })
-            jacobian.update({'sigma_e': np.log(self.parameters['sigma_e']) })
-            output = 0.0
-            if self.noParametersToEstimate > 1:
-                for param in self.parametersToEstimate:
-                    output += jacobian[param]
-            else:
-                output += jacobian[self.parametersToEstimate]
-        else: 
-            output = 0.0
+        jacobian = {}
+        jacobian.update({'mu': 0.0})
+        jacobian.update({'phi': np.log(1.0 - self.parameters['phi']**2) })
+        jacobian.update({'sigma_v': np.log(self.parameters['sigma_v']) })
+        jacobian.update({'sigma_e': np.log(self.parameters['sigma_e']) })
+        output = 0.0
+        if self.noParametersToEstimate > 1:
+            for param in self.parametersToEstimate:
+                output += jacobian[param]
+        else:
+            output += jacobian[self.parametersToEstimate]
+        
         return(output)
     
     # Define standard methods for the model struct
-    storeParameters = template_storeParameters
-    getParameters = template_getParameters
     generateData = template_generateData
     importData = template_importData
+    storeUnrestrictedParameters = template_storeUnrestrictedParameters
+    storeRestrictedParameters = template_storeRestrictedParameters
+    getUnrestrictedParameters = template_getUnrestrictedParameters
+    getRestrictedParameters = template_getRestrictedParameters
