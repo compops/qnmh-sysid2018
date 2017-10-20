@@ -7,11 +7,13 @@ def getHessian(sampler, stateEstimator):
 
     if sampler.useHesssianInformation:
         if sampler.settings['hessianEstimate'] is 'kalman':
-            return np.linalg.pinv(correctHessian(stateEstimator.hessianInternal))
+            return np.linalg.inv(correctHessian(stateEstimator.hessianInternal))
         if sampler.currentIteration > sampler.settings['memoryLength']:
             if sampler.settings['hessianEstimate'] is 'BFGS' or sampler.settings['hessianEstimate'] is 'SR1':            
                 return estimateHessianQN(sampler, sampler.settings['hessianEstimate'])
     
+    if sampler.settings['verbose']:
+        print("Current inverseHessian: " + str(inverseHessian) + ".")    
     return inverseHessian
 
 def correctHessian(x, approach='regularise'):

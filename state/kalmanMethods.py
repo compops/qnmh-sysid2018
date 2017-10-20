@@ -84,20 +84,27 @@ class FilteringSmoothing(object):
             # Gradient and Hessian estimation using the Segal and Weinstein estimators
             gradientPart = np.zeros((4, model.noObservations))
             for t in range(1, model.noObservations):
-                kappa = smoothedStateEstimate[t] * model.observations[t]
-                eta = smoothedStateEstimate[t] * smoothedStateEstimate[t] + smoothedStateCovariance[t]
-                eta1 = smoothedStateEstimate[t - 1] * smoothedStateEstimate[t - 1] + smoothedStateCovariance[t - 1]
-                phi = smoothedStateEstimate[t - 1] * smoothedStateEstimate[t] + smoothedStateCovarianceTwoStep[t]
+                xtt = smoothedStateEstimate[t]
+                xt = smoothedStateEstimate[t - 1]
 
-                px = smoothedStateEstimate[t] - mu - A * (smoothedStateEstimate[t - 1] - mu)
+                kappa = xtt * model.observations[t]
+                eta = xtt * xtt + smoothedStateCovariance[t]
+                eta1 = xt * xt + smoothedStateCovariance[t - 1]
+                phi = xt * xtt + smoothedStateCovarianceTwoStep[t]
+                px = xtt - mu - A * (xt - mu)
+                
                 Q1 = Q**(-1)
                 Q2 = Q**(-2)
                 Q3 = Q**(-3)
                 
                 gradientPart[0, t] = Q2 * px * (1.0 - A)
-                gradientPart[1, t] = Q2 * (phi - mu * smoothedStateEstimate[t - 1] * (1.0 - A) - A * eta1) - Q2 * mu * px
-                gradientPart[2, t] = Q3 * (eta - 2.0 * A * phi + A**2 * eta1 - 2.0 * (smoothedStateEstimate[t] - A * smoothedStateEstimate[t - 1]) * mu * (1.0 - A) + mu**2 * (1.0 - A)**2) - Q1
-                gradientPart[3, t] = R**(-3) * (model.observations[t]** 2 - 2 * kappa + eta) - R**(-1)
+                gradientPart[1, t] = Q2 * (1.0 - A**2) * (phi - A * eta1 - xt * mu * (1.0 - 2.0 * A) - xtt * mu + mu**2 * (1.0 - A))
+                gradientPart[2, t] = eta - 2 * A * phi + A**2 * eta1
+                gradientPart[2, t] += -2.0 * (xtt - A * smoothedStateEstimate[t-1]) * (1.0 - A) * mu
+                gradientPart[2, t] += mu**2 * (1.0 - A)**2
+                gradientPart[2, t] = Q2 * (gradientPart[2, t]) - 1.0
+                gradientPart[3, t] = 0.0
+            
             gradientSum = np.sum(gradientPart, axis=1)
 
             if self.settings['estimateHessians']:
@@ -108,26 +115,28 @@ class FilteringSmoothing(object):
             logPriorHessian = model.hessianLogPrior()
             i = 0
             for firstParameter in logPriorGradients.keys():
-                gradientSum[i] += logPriorGradients[firstParameter]
+                #gradientSum[i] += logPriorGradients[firstParameter]
                 if self.settings['estimateHessians']:
                     j = 0                    
                     for secondParameter in logPriorGradients.keys():
-                        hessian[i, j] += logPriorHessian[firstParameter] + logPriorHessian[secondParameter]
+                        #hessian[i, j] += logPriorHessian[firstParameter] + logPriorHessian[secondParameter]
                         j += 1
                 i += 1
 
             gradient = {}
+            gradientInternal = []
             i = 0
             for parameter in model.parameters.keys():
                 if parameter in model.parametersToEstimate:
                     gradient.update({parameter: gradientSum[i]})
+                    gradientInternal.append(gradientSum[i])
                 i += 1
 
         self.smoothedStateCovariance = smoothedStateCovariance
         self.smoothedStateEstimate = smoothedStateEstimate
 
         if self.settings['estimateGradients'] or self.settings['estimateHessians']:
-            self.gradientInternal = gradientSum[model.parametersToEstimateIndex]
+            self.gradientInternal = np.array(gradientInternal)
             self.gradient = gradient
         
         if self.settings['estimateHessians']:

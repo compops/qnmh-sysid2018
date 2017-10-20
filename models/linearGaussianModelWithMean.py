@@ -16,7 +16,7 @@ class model(object):
     parameters = {}
     unrestrictedParameters = {}
     noParameters = 4
-    prior = {'mu': (0.0, 0.2), 'phi': (0.9, 0.05), 'sigma_v': (0.2, 0.2), 'sigma_e': (2.0, 2.0)}
+    prior = {'mu': (0.0, 1.0), 'phi': (0.5, 1.0), 'sigma_v': (2.0, 2.0), 'sigma_e': (2.0, 2.0)}
 
     def generateInitialState(self, noSamples):
         return self.parameters['mu'] + np.random.normal(size=(1, noSamples)) * self.parameters['sigma_v'] / np.sqrt(1.0 - self.parameters['phi']**2)
@@ -58,42 +58,46 @@ class model(object):
     def gradientLogPrior(self):
         gradient = {}
         gradient.update({'mu': normalLogPDFgradient(self.parameters['mu'], self.prior['mu'][0], self.prior['mu'][1])})
-        gradient.update({'phi': normalLogPDFgradient(self.parameters['phi'], self.prior['phi'][0], self.prior['phi'][1])})
-        gradient.update({'sigma_v': gammaLogPDFgradient(self.parameters['sigma_v'], a=self.prior['sigma_v'][0], b=self.prior['sigma_v'][1])})
-        gradient.update({'sigma_e': gammaLogPDFgradient(self.parameters['sigma_e'], a=self.prior['sigma_e'][0], b=self.prior['sigma_e'][1])})
+        gradient.update({'phi': (1.0 - self.parameters['phi']**2) * normalLogPDFgradient(self.parameters['phi'], self.prior['phi'][0], self.prior['phi'][1])})
+        gradient.update({'sigma_v': self.parameters['sigma_v'] * gammaLogPDFgradient(self.parameters['sigma_v'], a=self.prior['sigma_v'][0], b=self.prior['sigma_v'][1])})
+        gradient.update({'sigma_e': self.parameters['sigma_e'] * gammaLogPDFgradient(self.parameters['sigma_e'], a=self.prior['sigma_e'][0], b=self.prior['sigma_e'][1])})
         return(gradient)
 
     def hessianLogPrior(self):
         hessian = {}
+        phi = (1.0 - self.parameters['phi']**2) * normalLogPDFhessian(self.parameters['phi'], self.prior['phi'][0], self.prior['phi'][1])
+        phi += (1.0 - 2.0 * self.parameters['phi']**2) * normalLogPDFgradient(self.parameters['mu'], self.prior['mu'][0], self.prior['mu'][1])
+        sigmav = gammaLogPDFhessian(self.parameters['sigma_v'], a=self.prior['sigma_v'][0], b=self.prior['sigma_v'][1]) * self.parameters['sigma_v']
+        sigmav += gammaLogPDFgradient(self.parameters['sigma_v'], a=self.prior['sigma_v'][0], b=self.prior['sigma_v'][1]) * self.parameters['sigma_v']
         hessian.update({'mu': normalLogPDFhessian(self.parameters['mu'], self.prior['mu'][0], self.prior['mu'][1])})
-        hessian.update({'phi': normalLogPDFhessian(self.parameters['phi'], self.prior['phi'][0], self.prior['phi'][1])})
-        hessian.update({'sigma_v': gammaLogPDFhessian(self.parameters['sigma_v'], a=self.prior['sigma_v'][0], b=self.prior['sigma_v'][1])})
+        hessian.update({'phi': phi})
+        hessian.update({'sigma_v': sigmav})
         hessian.update({'sigma_e': gammaLogPDFhessian(self.parameters['sigma_e'], a=self.prior['sigma_e'][0], b=self.prior['sigma_e'][1])})
         return(hessian)
 
     def gradientLogJointLikelihood(self, nextState, currentState, currentObservation):
         px = nextState - self.parameters['mu'] - self.parameters['phi'] * (currentState - self.parameters['mu'])
         py = currentObservation - currentState
-        if self.parameterisation is 'unrestricted': 
-            gradient = {}
-            gradient.update({'mu': (1.0 - self.parameters['phi']) * self.parameters['sigma_v']**(-2) * px})
-            gradient.update({'phi': (currentState - self.parameters['mu']) * self.parameters['sigma_v']**(-2) * px * (1.0 - self.parameters['phi']**2)})
-            gradient.update({'sigma_v': self.parameters['sigma_v']**(-2) * px**2 - 1.0})
-            gradient.update({'sigma_e': self.parameters['sigma_e']**(-2) * py**2 - 1.0})
-        else:
-            gradient = {}
-            gradient.update({'mu': (1.0 - self.parameters['phi']) * self.parameters['sigma_v']**(-2) * px})
-            gradient.update({'phi': (currentState - self.parameters['mu']) * self.parameters['sigma_v']**(-2) * px})
-            gradient.update({'sigma_v': self.parameters['sigma_v']**(-3) * px**2 - self.parameters['sigma_v']**(-1)})
-            gradient.update({'sigma_e': self.parameters['sigma_e']**(-3) * py**2 - self.parameters['sigma_e']**(-1)   })
+        Q = self.parameters['sigma_v']**(-2)
+        R = self.parameters['sigma_e']**(-2)
+
+        gradient = {}
+        gradient.update({'mu': (1.0 - self.parameters['phi']) * Q * px})
+        gradient.update({'phi': (currentState - self.parameters['mu']) * Q * px * (1.0 - self.parameters['phi']**2)})
+        gradient.update({'sigma_v': Q * px**2 - 1.0})
+        gradient.update({'sigma_e': R * py**2 - 1.0})
         return(gradient)         
 
     def transformParametersToUnrestricted(self):
         #print("transformParametersToUnrestricted, self.parameters: " + str(self.parameters))
-        self.unrestrictedParameters['mu'] = self.parameters['mu']
-        self.unrestrictedParameters['phi'] = np.arctanh(self.parameters['phi'])
-        self.unrestrictedParameters['sigma_v'] = np.log(self.parameters['sigma_v'])
-        self.unrestrictedParameters['sigma_e'] = np.log(self.parameters['sigma_e'])        
+        try:
+            self.unrestrictedParameters['mu'] = self.parameters['mu']
+            self.unrestrictedParameters['phi'] = np.arctanh(self.parameters['phi'])
+            self.unrestrictedParameters['sigma_v'] = np.log(self.parameters['sigma_v'])
+            self.unrestrictedParameters['sigma_e'] = np.log(self.parameters['sigma_e'])        
+        except:
+            print(self.parameters)
+            input("ENTER")
         #print("transformParametersToUnrestricted, self.unrestrictedParameters: " + str(self.unrestrictedParameters))
     
     def transformParametersFromUnrestricted(self):
@@ -107,9 +111,9 @@ class model(object):
     def logJacobian(self):
         jacobian = {}
         jacobian.update({'mu': 0.0})
-        jacobian.update({'phi': np.log(1.0 - self.parameters['phi']**2) })
-        jacobian.update({'sigma_v': np.log(self.parameters['sigma_v']) })
-        jacobian.update({'sigma_e': np.log(self.parameters['sigma_e']) })
+        jacobian.update({'phi': np.log(1.0 - self.parameters['phi']**2)})
+        jacobian.update({'sigma_v': np.log(self.parameters['sigma_v'])})
+        jacobian.update({'sigma_e': np.log(self.parameters['sigma_e'])})
         output = 0.0
         if self.noParametersToEstimate > 1:
             for param in self.parametersToEstimate:

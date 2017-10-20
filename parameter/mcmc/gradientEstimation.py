@@ -5,6 +5,9 @@ def getGradient(sampler, stateEstimator):
         gradient = stateEstimator.gradientInternal
     else:
         gradient = np.zeros(sampler.settings['noParametersToEstimate'])
+
+    if sampler.settings['verbose']:
+            print("Current gradient: " + str(gradient) + ".")        
     return gradient
 
 def getNaturalGradient(sampler, gradient, inverseHessian):
@@ -20,4 +23,7 @@ def getNaturalGradient(sampler, gradient, inverseHessian):
         naturalGradient = np.array(stepSize * np.dot(inverseHessian, gradient)).reshape(-1)
     else:
         naturalGradient = np.zeros(sampler.settings['noParametersToEstimate'])
+    
+    if sampler.settings['verbose']:
+        print("Current natural gradient: " + str(naturalGradient) + ".")
     return naturalGradient

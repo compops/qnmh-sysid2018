@@ -184,7 +184,9 @@ class ParameterEstimator(object):
         else:
             perturbation = np.random.multivariate_normal(np.zeros(noParameters), stepSize**2 * currentHessian)
         
-        proposedUnrestrictedParameters = currentUnrestrictedParameters + currentNaturalGradient + perturbation
+        changeInParameters = truncateContribution(currentNaturalGradient + perturbation, self.settings['trustRegionSize'])
+        proposedUnrestrictedParameters = currentUnrestrictedParameters + changeInParameters
+        
         if self.settings['verbose']:
             print("Proposing unrestricted parameters: " + str(proposedUnrestrictedParameters) + " given " + str(currentUnrestrictedParameters) + ".")
 
@@ -223,25 +225,27 @@ class ParameterEstimator(object):
             proposedNaturalGradient = getNaturalGradient(self, proposedGradient, proposedHessian)
             
             if isHessianValid(proposedHessian):
-                logPriorDifference = proposedLogPrior - currentLogPrior
-                logLikelihoodDifference = proposedLogLikelihood - currentLogLikelihood
+                logPriorDifference = float(proposedLogPrior - currentLogPrior)
+                logLikelihoodDifference = float(proposedLogLikelihood - currentLogLikelihood)
 
                 proposalMean = currentUnrestrictedParameters + currentNaturalGradient
                 proposalVariance = stepSize**2 * currentHessian
-                #print(proposedUnrestrictedParameters)
-                #print(proposalMean)
-                #print(proposalVariance)
+                if self.settings['verbose']:
+                    print("proposedUnrestrictedParameters: " + str(proposedUnrestrictedParameters) + ".")
+                    print("proposalMean: " + str(proposalMean) + ".")
+                    print("proposalVariance: " + str(proposalVariance) + ".")
                 logProposalProposed = logPDFGaussian(proposedUnrestrictedParameters, proposalMean, proposalVariance)
 
                 proposalMean = proposedUnrestrictedParameters + proposedNaturalGradient
                 proposalVariance = stepSize**2 * proposedHessian
-                #print(currentRestrictedParameters)
-                #print(proposalMean)
-                #print(proposalVariance)
-                logProposalCurrent = logPDFGaussian(currentRestrictedParameters, proposalMean, proposalVariance)
+                if self.settings['verbose']:
+                    print("currentUnrestrictedParameters: " + str(currentUnrestrictedParameters) + ".")
+                    print("proposalMean: " + str(proposalMean) + ".")
+                    print("proposalVariance: " + str(proposalVariance) + ".")
+                logProposalCurrent = logPDFGaussian(currentUnrestrictedParameters, proposalMean, proposalVariance)
 
-                logProposalDifference = logProposalProposed - logProposalCurrent
-                logJacobianDifference = proposedLogJacobian - currentLogJacobian
+                logProposalDifference = float(logProposalProposed - logProposalCurrent)
+                logJacobianDifference = float(proposedLogJacobian - currentLogJacobian)
                 try:
                     acceptProb = np.exp(logPriorDifference + logLikelihoodDifference + logProposalDifference + logJacobianDifference)
                 except:
@@ -250,6 +254,9 @@ class ParameterEstimator(object):
                     acceptProb = 1.0            
             else:
                 print("Estimate of inverse Hessian is not PSD or is singular.")
+                print(proposedHessian)
+                print(np.linalg.eig(proposedHessian)[0])
+                input("continue?")
                 acceptProb = 0.0
 
             if self.settings['verbose'] and isHessianValid(proposedHessian):

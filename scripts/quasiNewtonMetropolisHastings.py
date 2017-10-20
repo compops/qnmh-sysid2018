@@ -13,7 +13,7 @@ def run():
     systemModel.parameters['phi'] = 0.80
     systemModel.parameters['sigma_v'] = 1.00
     systemModel.parameters['sigma_e'] = 0.10
-    systemModel.noObservations = 500
+    systemModel.noObservations = 1000
     systemModel.initialState = 0.0
     systemModel.generateData()
 
@@ -34,15 +34,15 @@ def run():
     # Metropolis-Hastings
     mhSettings = {'noIters': 1000, 
                   'noBurnInIters': 200, 
-                  'stepSize': 0.8, 
-                  'initialParameters': (0.0, 0.5, 1.0), 
+                  'stepSize': 1.0, 
+                  'initialParameters': (0.2, 0.5, 1.0), 
                   'verbose': False,
                   'hessianEstimate': 'kalman',
                   'SR1UpdateLimit': '1e-8',
                   'printWarningsForUnstableSystems': True,
                   'memoryLength': 20,
-                  'initialHessian': 1e-2,
-                  'trustRegionSize': 0.01
+                  'initialHessian': 1e-4,
+                  'trustRegionSize': None
                   }
     mhSampler = metropolisHastings.ParameterEstimator(mhSettings)
     mhSampler.run(kalman, inferenceModel, 'mh2')
