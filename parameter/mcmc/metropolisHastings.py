@@ -116,6 +116,9 @@ class ParameterEstimator(object):
         self.results.update({'stateMeanEstimates': np.mean(self.states[noBurnInIters:noIters, :], axis=0)})
         self.results.update({'stateVarEstimates': np.var(self.states[noBurnInIters:noIters, :], axis=0)})
         self.results.update({'parameterTrace': self.restrictedParameters[noBurnInIters:noIters, :]})
+        self.results.update({'proposedRestrictedParameters': self.proposedRestrictedParameters[noBurnInIters:noIters, :]})
+        self.results.update({'proposedGradient': self.proposedGradient[noBurnInIters:noIters, :]})
+        self.results.update({'proposedNaturalGradient': self.proposedNaturalGradient[noBurnInIters:noIters, :]})
 
     ###########################################################################
     def plot(self):
@@ -177,12 +180,11 @@ class ParameterEstimator(object):
         currentUnrestrictedParameters = self.unrestrictedParameters[self.currentIteration - 1, :]
         currentNaturalGradient = self.naturalGradient[self.currentIteration - 1, :]
         currentHessian = self.hessian[self.currentIteration - 1, :, :]
-        stepSize = self.settings['stepSize']
 
         if (noParameters == 1):
-            perturbation = stepSize * np.sqrt(np.abs(currentHessian)) * np.random.normal()
+            perturbation = np.sqrt(np.abs(currentHessian)) * np.random.normal()
         else:
-            perturbation = np.random.multivariate_normal(np.zeros(noParameters), stepSize**2 * currentHessian)
+            perturbation = np.random.multivariate_normal(np.zeros(noParameters), currentHessian)
         
         changeInParameters = truncateContribution(currentNaturalGradient + perturbation, self.settings['trustRegionSize'])
         proposedUnrestrictedParameters = currentUnrestrictedParameters + changeInParameters
@@ -197,7 +199,6 @@ class ParameterEstimator(object):
     ###########################################################################
     def computeAcceptanceProbability(self, state, model):
         noParameters = self.settings['noParametersToEstimate']
-        stepSize = self.settings['stepSize']
 
         currentRestrictedParameters = self.restrictedParameters[self.currentIteration - 1, :]
         currentUnrestrictedParameters = self.unrestrictedParameters[self.currentIteration - 1, :]
@@ -229,20 +230,10 @@ class ParameterEstimator(object):
                 logLikelihoodDifference = float(proposedLogLikelihood - currentLogLikelihood)
 
                 proposalMean = currentUnrestrictedParameters + currentNaturalGradient
-                proposalVariance = stepSize**2 * currentHessian
-                if self.settings['verbose']:
-                    print("proposedUnrestrictedParameters: " + str(proposedUnrestrictedParameters) + ".")
-                    print("proposalMean: " + str(proposalMean) + ".")
-                    print("proposalVariance: " + str(proposalVariance) + ".")
-                logProposalProposed = logPDFGaussian(proposedUnrestrictedParameters, proposalMean, proposalVariance)
+                logProposalProposed = logPDFGaussian(proposedUnrestrictedParameters, proposalMean, currentHessian)
 
                 proposalMean = proposedUnrestrictedParameters + proposedNaturalGradient
-                proposalVariance = stepSize**2 * proposedHessian
-                if self.settings['verbose']:
-                    print("currentUnrestrictedParameters: " + str(currentUnrestrictedParameters) + ".")
-                    print("proposalMean: " + str(proposalMean) + ".")
-                    print("proposalVariance: " + str(proposalVariance) + ".")
-                logProposalCurrent = logPDFGaussian(currentUnrestrictedParameters, proposalMean, proposalVariance)
+                logProposalCurrent = logPDFGaussian(currentUnrestrictedParameters, proposalMean, proposedHessian)
 
                 logProposalDifference = float(logProposalProposed - logProposalCurrent)
                 logJacobianDifference = float(proposedLogJacobian - currentLogJacobian)
@@ -250,13 +241,12 @@ class ParameterEstimator(object):
                     acceptProb = np.exp(logPriorDifference + logLikelihoodDifference + logProposalDifference + logJacobianDifference)
                 except:
                     if self.settings['verbose']:
-                        print("Accepting as overflow occured.")
-                    acceptProb = 1.0            
+                        print("Rejecting as overflow occured.")
+                    acceptProb = 0.0            
             else:
                 print("Estimate of inverse Hessian is not PSD or is singular.")
                 print(proposedHessian)
                 print(np.linalg.eig(proposedHessian)[0])
-                input("continue?")
                 acceptProb = 0.0
 
             if self.settings['verbose'] and isHessianValid(proposedHessian):

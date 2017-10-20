@@ -3,14 +3,15 @@ from parameter.mcmc.helpers import isPositiveSemiDefinite
 
 def getHessian(sampler, stateEstimator):
     inverseHessian = np.eye(sampler.settings['noParametersToEstimate']) 
-    inverseHessian *= sampler.settings['initialHessian']
+    inverseHessian *= sampler.settings['initialHessian']**2
+    inverseHessian *+ sampler.settings['stepSize']**2
 
     if sampler.useHesssianInformation:
         if sampler.settings['hessianEstimate'] is 'kalman':
-            return np.linalg.inv(correctHessian(stateEstimator.hessianInternal))
+            return sampler.settings['stepSize']**2 * np.linalg.inv(stateEstimator.hessianInternal)
         if sampler.currentIteration > sampler.settings['memoryLength']:
             if sampler.settings['hessianEstimate'] is 'BFGS' or sampler.settings['hessianEstimate'] is 'SR1':            
-                return estimateHessianQN(sampler, sampler.settings['hessianEstimate'])
+                return sampler.settings['stepSize']**2 * estimateHessianQN(sampler, sampler.settings['hessianEstimate'])
     
     if sampler.settings['verbose']:
         print("Current inverseHessian: " + str(inverseHessian) + ".")    
@@ -33,8 +34,7 @@ def correctHessian(x, approach='regularise'):
     
     return(x)
 
-
-def estimateHessianQN(sampler, method='BFGS', useInformationFromRejectedSteps=False):
+def estimateHessianQN(sampler, method='BFGS', useOnlyInformationFromAcceptedSteps=True):
     memoryLength = sampler.settings['memoryLength']
     initialHessian = sampler.settings['initialHessian']
     noParameters = sampler.noParametersToEstimate
@@ -42,14 +42,14 @@ def estimateHessianQN(sampler, method='BFGS', useInformationFromRejectedSteps=Fa
    
     # Extract parameters and gradients
     idx = range(sampler.currentIteration - memoryLength, sampler.currentIteration)
-    parameters = sampler.proposedParameters[idx, :]
+    parameters = sampler.proposedUnrestrictedParameters[idx, :]
     gradients = sampler.proposedGradient[idx, :]
     hessians = sampler.proposedHessian[idx, :, :]
     accepted = sampler.accepted[idx]
     target = np.concatenate(sampler.proposedLogPrior[idx] + sampler.proposedLogLikelihood[idx]).reshape(-1)
 
     # Keep only unique parameters and gradients
-    if not useInformationFromRejectedSteps:
+    if useOnlyInformationFromAcceptedSteps:
         idx = np.where(accepted > 0)[0]
 
         # No available infomation, so quit
@@ -82,7 +82,7 @@ def estimateHessianQN(sampler, method='BFGS', useInformationFromRejectedSteps=Fa
         inverseHessianEstimate, noEffectiveSamples = estimateHessianBFGS(sampler, parametersDiff, gradientsDiff)
     
     if method is 'SR1':
-        inverseHessianEstimate, noEffectiveSamples = estimateHessianBFGS(sampler, parametersDiff, gradientsDiff)
+        inverseHessianEstimate, noEffectiveSamples = estimateHessianSR1(sampler, parametersDiff, gradientsDiff)
 
     sampler.noEffectiveSamples[sampler.currentIteration] = noEffectiveSamples
     return inverseHessianEstimate
@@ -153,13 +153,15 @@ def estimateHessianSR1(sampler, parametersDiff, gradientsDiff):
 
     for i in range(parametersDiff.shape[0]):
         differenceTerm = parametersDiff[i] - np.dot(inverseHessianEstimate, gradientsDiff[i])
-        term1 = np.abs(parametersDiff[i], differenceTerm)
+        term1 = np.dot(parametersDiff[i], differenceTerm)
         term2 = np.linalg.norm(parametersDiff) * np.linalg.norm(differenceTerm)
 
-        if term1 > sampler.settings['SR1UpdateLimit'] * term2:
-            rankOneUpdate = np.outer(differenceTerm, differenceTerm) 
-            rankOneUpdate /= np.dot(differenceTerm, gradientsDiff[i])
-            inverseHessianEstimate += rankOneUpdate
-            noEffectiveSamples += 1
+        # if (term1 > sampler.settings['SR1UpdateLimit'] * term2):
+        rankOneUpdate = np.outer(differenceTerm, differenceTerm) 
+        rankOneUpdate /= np.dot(differenceTerm, gradientsDiff[i])
+        inverseHessianEstimate += rankOneUpdate
+        noEffectiveSamples += 1
     
-    return inverseHessianEstimate, noEffectiveSamples
+    if noEffectiveSamples == 0:
+        inverseHessianEstimate = -inverseHessianEstimate
+    return -inverseHessianEstimate, noEffectiveSamples

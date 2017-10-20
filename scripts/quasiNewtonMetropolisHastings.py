@@ -33,15 +33,15 @@ def run():
     
     # Metropolis-Hastings
     mhSettings = {'noIters': 1000, 
-                  'noBurnInIters': 200, 
+                  'noBurnInIters': 100, 
                   'stepSize': 1.0, 
                   'initialParameters': (0.2, 0.5, 1.0), 
                   'verbose': False,
-                  'hessianEstimate': 'kalman',
-                  'SR1UpdateLimit': '1e-8',
+                  'hessianEstimate': 'SR1',
+                  'SR1UpdateLimit': 1e-8,
                   'printWarningsForUnstableSystems': True,
                   'memoryLength': 20,
-                  'initialHessian': 1e-4,
+                  'initialHessian': 1e-2,
                   'trustRegionSize': None
                   }
     mhSampler = metropolisHastings.ParameterEstimator(mhSettings)

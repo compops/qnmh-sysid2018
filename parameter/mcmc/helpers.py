@@ -68,14 +68,15 @@ def printProgressReportToScreen(sampler):
     #     print("")
     #     print(" Current log-SJD value:                          ")
     #     print(str(np.log(sampler.calcSJD())))
-    if 'BFGS' in sampler.settings['hessianEstimate'] or 'SR1' in sampler.settings['hessianEstimate']:
-        if (iteration > sampler.settings['memoryLength']):
-            noEffectiveSamples = sampler.noEffectiveSamples[range(iteration)]
-            idx = np.where(noEffectiveSamples > 0)
-            if idx:
-                print("")
-                print(" Mean number of samples for Hessian estimate:           ")
-                print("%.4f" % np.mean(noEffectiveSamples[idx]))
+    # if 'BFGS' in sampler.settings['hessianEstimate'] or 'SR1' in sampler.settings['hessianEstimate']:
+    #     if (iteration > sampler.settings['memoryLength']):
+    #         noEffectiveSamples = sampler.noEffectiveSamples[range(iteration)]
+    #         idx = np.where(noEffectiveSamples > 0)
+    #         if idx:
+    #             print("")
+    #             print(" Mean number of samples for Hessian estimate:           ")
+    #             print("%.4f" % np.mean(noEffectiveSamples[idx]))
+    
     print("################################################################################################ ")
 
 # Check if dirs for outputs exists, otherwise create them
@@ -127,16 +128,23 @@ def plotResults(sampler):
 
     plt.figure()
     for i in range(noParameters):
-        plt.subplot(noParameters, 2, 2 * i + 1)
+        plt.subplot(noParameters, 4, 4 * i + 1)
         plt.hist(sampler.results['parameterTrace'][:, i], bins=noBins, color = Dark2_8.mpl_colors[i])
-        plt.ylabel("Marginal posterior probability")
-        plt.xlabel(parameterNames[i])
-        plt.subplot(noParameters, 2, 2 * i + 2)
+        plt.ylabel("Marginal posterior probability of " + parameterNames[i])
+        plt.xlabel("iteration")        
+        plt.subplot(noParameters, 4, 4 * i + 2)
         plt.plot(sampler.results['parameterTrace'][:, i], color = Dark2_8.mpl_colors[i])
-        plt.ylabel("Parameter trace")
-        plt.xlabel(parameterNames[i])
+        plt.ylabel("Parameter trace of " + parameterNames[i])
+        plt.xlabel("iteration")        
+        plt.subplot(noParameters, 4, 4 * i + 3)
+        plt.plot(sampler.results['proposedRestrictedParameters'][:, i], color = Dark2_8.mpl_colors[i])
+        plt.ylabel("Proposed trace of " + parameterNames[i])
+        plt.xlabel("iteration") 
+        plt.subplot(noParameters, 4, 4 * i + 4)
+        plt.plot(sampler.results['proposedNaturalGradient'][:, i], color = Dark2_8.mpl_colors[i])
+        plt.ylabel("natural gradient of " + parameterNames[i])
+        plt.xlabel("iteration")        
     plt.show()
-
 
 def truncateContribution(x, limit):
     if not limit:

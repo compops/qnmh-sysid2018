@@ -19,7 +19,7 @@ def getNaturalGradient(sampler, gradient, inverseHessian):
         flag = True
     
     if sampler.useGradientInformation and flag:
-        stepSize = 0.5 * sampler.settings['noParametersToEstimate']**2
+        stepSize = 0.5 * sampler.settings['stepSize']**2
         naturalGradient = np.array(stepSize * np.dot(inverseHessian, gradient)).reshape(-1)
     else:
         naturalGradient = np.zeros(sampler.settings['noParametersToEstimate'])
