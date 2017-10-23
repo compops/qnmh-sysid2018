@@ -8,6 +8,10 @@ from parameter.mcmc.helpers import printProgressReportToScreen
 from parameter.mcmc.helpers import isHessianValid
 from parameter.mcmc.helpers import logPDFGaussian
 
+from parameter.mcmc.performanceMeasures import calcESS
+from parameter.mcmc.performanceMeasures import calcIACT
+from parameter.mcmc.performanceMeasures import calcSJD
+
 from parameter.mcmc.gradientEstimation import getGradient
 from parameter.mcmc.gradientEstimation import getNaturalGradient
 from parameter.mcmc.hessianEstimation import getHessian
@@ -105,7 +109,9 @@ class ParameterEstimator(object):
             if self.settings['verbose']:
                 print("Current unrestricted parameters: " + str(self.unrestrictedParameters[iteration, :]) + ".")
                 print("Current restricted parameters: " + str(self.restrictedParameters[iteration, :]) + ".")
-                input("Press ENTER to continue...")
+
+                if self.settings['waitForENTER']:
+                    input("Press ENTER to continue...")
 
             if np.remainder(iteration + 1, self.settings['nProgressReport']) == 0:
                 printProgressReportToScreen(self)
@@ -119,10 +125,6 @@ class ParameterEstimator(object):
         self.results.update({'proposedRestrictedParameters': self.proposedRestrictedParameters[noBurnInIters:noIters, :]})
         self.results.update({'proposedGradient': self.proposedGradient[noBurnInIters:noIters, :]})
         self.results.update({'proposedNaturalGradient': self.proposedNaturalGradient[noBurnInIters:noIters, :]})
-
-    ###########################################################################
-    def plot(self):
-        plotResults(self)
 
     ###########################################################################
     def acceptParameters(self):
@@ -186,7 +188,7 @@ class ParameterEstimator(object):
         else:
             perturbation = np.random.multivariate_normal(np.zeros(noParameters), currentHessian)
         
-        changeInParameters = truncateContribution(currentNaturalGradient + perturbation, self.settings['trustRegionSize'])
+        changeInParameters = currentNaturalGradient + perturbation
         proposedUnrestrictedParameters = currentUnrestrictedParameters + changeInParameters
         
         if self.settings['verbose']:
@@ -242,12 +244,16 @@ class ParameterEstimator(object):
                 except:
                     if self.settings['verbose']:
                         print("Rejecting as overflow occured.")
-                    acceptProb = 0.0            
+                    acceptProb = 0.0
+                if self.settings['trustRegionSize']:
+                    if np.max(np.abs(proposedRestrictedParameters - currentRestrictedParameters)) > self.settings['trustRegionSize']:
+                        acceptProb = 0.0
+                        print("Rejected as parameter update violates trust region.")
             else:
-                print("Estimate of inverse Hessian is not PSD or is singular.")
-                print(proposedHessian)
-                print(np.linalg.eig(proposedHessian)[0])
-                acceptProb = 0.0
+                print("Estimate of inverse Hessian is not PSD or is singular, so rejecting...")
+                #print(proposedHessian)
+                #print(np.linalg.eig(proposedHessian)[0])
+                #acceptProb = 0.0
 
             if self.settings['verbose'] and isHessianValid(proposedHessian):
                 print("currentRestrictedParameters" + str(currentRestrictedParameters) + ".")
@@ -274,4 +280,15 @@ class ParameterEstimator(object):
             self.acceptProb[self.currentIteration] = 0.0
             print("Proposed parameters: " + str(proposedRestrictedParameters) + " results in an unstable system so rejecting.")
 
+    ###########################################################################
+    def plot(self):
+        plotResults(self)
 
+    def calcESS(self, maxLag=None):
+        return calcESS(self, maxLag)
+
+    def calcIACT(self, maxLag=None):
+        return calcIACT(self, maxLag)
+
+    def calcSJD(self):
+        return calcSJD(self)

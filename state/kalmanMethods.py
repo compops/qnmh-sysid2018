@@ -30,7 +30,7 @@ class FilteringSmoothing(object):
 
         for t in range(1, model.noObservations):
             # Prediction step
-            predictedStateEstimate[t] = A * filteredStateEstimate[t-1] + mu * (1.0 - A)
+            predictedStateEstimate[t] = mu + A * (filteredStateEstimate[t-1]- mu)
             predictedStateCovariance[t] = A * filteredStateCovariance[t-1] * A + Q
 
             # Correction step
@@ -93,9 +93,9 @@ class FilteringSmoothing(object):
                 phi = xt * xtt + smoothedStateCovarianceTwoStep[t]
                 px = xtt - mu - A * (xt - mu)
                 
-                Q1 = Q**(-1)
-                Q2 = Q**(-2)
-                Q3 = Q**(-3)
+                Q1 = model.parameters['sigma_v']**(-1)
+                Q2 = model.parameters['sigma_v']**(-2)
+                Q3 = model.parameters['sigma_v']**(-3)
                 
                 gradientPart[0, t] = Q2 * px * (1.0 - A)
                 gradientPart[1, t] = Q2 * (1.0 - A**2) * (phi - A * eta1 - xt * mu * (1.0 - 2.0 * A) - xtt * mu + mu**2 * (1.0 - A))

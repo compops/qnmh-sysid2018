@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 import copy
 
@@ -63,15 +64,32 @@ def template_getRestrictedParameters(model):
 
 # Standard template for importing data
 def template_importData(model, fileName):
-    data = np.loadtxt(fileName, delimiter=",")
-    model.observations = np.array(data[0:model.noObservations], copy=True).reshape((model.noObservations, 1))
+    df = pd.read_csv(fileName)
+
+    if 'observation' in list(df):
+        observations = df['observation'].values[1:(model.noObservations+1)]
+        observations = np.array(observations, copy=True).reshape((model.noObservations, 1))
+        model.observations = observations
+    
+    if 'state' in list(df):
+        states = df['state'].values[0:(model.noObservations+1)]
+        states = np.array(states, copy=True).reshape((model.noObservations+1, 1))
+        model.states = states        
+    
+    print("Loaded data from file: " + fileName + ".")
+    #data = np.loadtxt(fileName, delimiter=",")
+    #model.observations = np.array(data[0:model.noObservations], copy=True).reshape((model.noObservations, 1))
 
 # Standard template for generating data
-def template_generateData(model):
+def template_generateData(model, fileName=None):
     model.states = np.zeros((model.noObservations + 1, 1))
-    model.observations = np.zeros((model.noObservations, 1))
+    model.observations = np.zeros((model.noObservations + 1, 1))
     model.states[0] = model.initialState
-    for t in range(0, model.noObservations):
+    for t in range(1, model.noObservations + 1):
+        model.states[t] = model.generateState(model.states[t-1])
         model.observations[t] = model.generateObservation(model.states[t])
-        model.states[t + 1] = model.generateState(model.states[t])
-    model.states = model.states[0:model.noObservations]
+    
+    if fileName:
+        df = pd.DataFrame(data=np.hstack((model.states, model.observations)), columns=['state', 'observation'])
+        df.to_csv(fileName, index=False, header=True)
+        print("Wrote generated data to file: " + fileName + ".")

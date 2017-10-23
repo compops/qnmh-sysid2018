@@ -8,35 +8,64 @@ def getHessian(sampler, stateEstimator):
 
     if sampler.useHesssianInformation:
         if sampler.settings['hessianEstimate'] is 'kalman':
-            return sampler.settings['stepSize']**2 * np.linalg.inv(stateEstimator.hessianInternal)
-        if sampler.currentIteration > sampler.settings['memoryLength']:
-            if sampler.settings['hessianEstimate'] is 'BFGS' or sampler.settings['hessianEstimate'] is 'SR1':            
-                return sampler.settings['stepSize']**2 * estimateHessianQN(sampler, sampler.settings['hessianEstimate'])
+            hessianEstimate = sampler.settings['stepSize']**2 * np.linalg.inv(stateEstimator.hessianInternal)
+            return correctHessian(hessianEstimate, sampler)
+        elif sampler.currentIteration > sampler.settings['memoryLength']:
+            return sampler.settings['stepSize']**2 * estimateHessianQN(sampler)
+
     
     if sampler.settings['verbose']:
         print("Current inverseHessian: " + str(inverseHessian) + ".")    
     return inverseHessian
 
-def correctHessian(x, approach='regularise'):
+def correctHessian(x, sampler):
+    approach = sampler.settings['hessianCorrectionApproach']
+    # No correction
+    if not approach:
+        return(x)
+    
+    if isinstance(x, bool) or not isPositiveSemiDefinite(x):
 
-    if not isPositiveSemiDefinite(x):
+        if isPositiveSemiDefinite(-x):
+            print("Iteration: " + str(sampler.currentIteration) +  ", switched to negative Hessian estimate...")
+            return -x
+        
+        if approach is 'replace':
+            if sampler.currentIteration > sampler.settings['noBurnInIters']:
+                if sampler.settings['verbose'] or sampler.settings['informOfHessianCorrection']:
+                    print("Iteration: " + str(sampler.currentIteration) +  ", corrected Hessian by replacing with estimate from latter half of burn-in.")
+                
+                if not hasattr(sampler, 'empericalHessianEstimate'):
+                    idx = range(int(0.5 * sampler.settings['noBurnInIters']), sampler.settings['noBurnInIters'])
+                    sampler.empericalHessianEstimate = np.cov(sampler.unrestrictedParameters[idx, :], rowvar=False)
+                    print("Iteration: " + str(sampler.currentIteration) +  ", computed an empirical estimate of the posterior covariance to replace ND Hessian estimates.")
+                return(sampler.empericalHessianEstimate)
+            else:
+                return np.diag(np.ones(sampler.noParametersToEstimate)) * sampler.settings['initialHessian']**2
+        
         # Add a diagonal matrix proportional to the largest negative eigenvalue
-        if approach is 'regularise':
-            smallestEigenValue = np.min(np.linalg.eig(x)[0])
-            x -= 2.0 * smallestEigenValue * np.eye(x.shape[0])
-            #print("Corrected Hessian by adding diagonal matrix with elements: " + str(-2.0 * smallestEigenValue))
+        elif approach is 'regularise':
+                smallestEigenValue = np.min(np.linalg.eig(x)[0])
+                if sampler.settings['verbose'] or sampler.settings['informOfHessianCorrection']:
+                    print("Iteration: " + str(sampler.currentIteration) +  ", corrected Hessian by adding diagonal matrix with elements: " + str(-2.0 * smallestEigenValue))
+                return x - 2.0 * smallestEigenValue * np.eye(x.shape[0])
 
         # Flip the negative eigenvalues
-        if approach is 'flip':
-            evDecomp = np.linalg.eig(x)
-            x = np.dot(np.dot(evDecomp[1], np.diag(np.abs(evDecomp[0]))), evDecomp[1])
-            #print("Corrected Hessian by flipping negative eigenvalues to positive.")
-    
-    return(x)
+        elif approach is 'flip':
+                if sampler.settings['verbose'] or sampler.settings['informOfHessianCorrection']:
+                    print("Iteration: " + str(sampler.currentIteration) +  ", corrected Hessian by flipping negative eigenvalues to positive.")
+                evDecomp = np.linalg.eig(x)
+                return np.dot(np.dot(evDecomp[1], np.diag(np.abs(evDecomp[0]))), evDecomp[1])
+        else:
+            raise ValueError("Unknown Hessian correction strategy...")
+    else:
+        return x
 
-def estimateHessianQN(sampler, method='BFGS', useOnlyInformationFromAcceptedSteps=True):
+def estimateHessianQN(sampler):
     memoryLength = sampler.settings['memoryLength']
     initialHessian = sampler.settings['initialHessian']
+    method = sampler.settings['hessianEstimate']
+    useOnlyInformationFromAcceptedSteps = sampler.settings['hessianEstimateOnlyAcceptedInformation']
     noParameters = sampler.noParametersToEstimate
     identityMatrix = np.diag(np.ones(noParameters))
    
@@ -54,7 +83,12 @@ def estimateHessianQN(sampler, method='BFGS', useOnlyInformationFromAcceptedStep
 
         # No available infomation, so quit
         if len(idx) == 0:
-            return identityMatrix * initialHessian**2
+            if sampler.settings['verbose']:
+                print("Not enough samples to estimate Hessian...")
+            if sampler.settings['hessianCorrectionApproach'] is 'replace':
+                return correctHessian(True, sampler)
+            else:    
+                return identityMatrix * initialHessian**2
         
         parameters = parameters[idx, :]
         gradients = gradients[idx, :]
@@ -78,16 +112,22 @@ def estimateHessianQN(sampler, method='BFGS', useOnlyInformationFromAcceptedStep
     if method is 'DampedBFGS':
         inverseHessianEstimate, noEffectiveSamples = estimateHessianBFGS(sampler, parametersDiff, gradientsDiff, dampedBFGS=True)
 
-    if method is 'BFGS':
+    elif method is 'BFGS':
         inverseHessianEstimate, noEffectiveSamples = estimateHessianBFGS(sampler, parametersDiff, gradientsDiff)
+        inverseHessianEstimate = correctHessian(inverseHessianEstimate, sampler)
     
-    if method is 'SR1':
+    elif method is 'SR1':
         inverseHessianEstimate, noEffectiveSamples = estimateHessianSR1(sampler, parametersDiff, gradientsDiff)
+        inverseHessianEstimate = correctHessian(inverseHessianEstimate, sampler)
+
+    else:
+        raise NameError("Unknown quasi-Newton algorithm selected...")
 
     sampler.noEffectiveSamples[sampler.currentIteration] = noEffectiveSamples
     return inverseHessianEstimate
 
 def estimateHessianBFGS(sampler, parametersDiff, gradientsDiff, dampedBFGS=False):
+
     memoryLength = sampler.settings['memoryLength']
     initialHessian = sampler.settings['initialHessian']
     noParameters = sampler.noParametersToEstimate
@@ -144,6 +184,7 @@ def estimateHessianBFGS(sampler, parametersDiff, gradientsDiff, dampedBFGS=False
 
 
 def estimateHessianSR1(sampler, parametersDiff, gradientsDiff):
+
     memoryLength = sampler.settings['memoryLength']
     initialHessian = sampler.settings['initialHessian']
     noParameters = sampler.noParametersToEstimate
@@ -153,15 +194,10 @@ def estimateHessianSR1(sampler, parametersDiff, gradientsDiff):
 
     for i in range(parametersDiff.shape[0]):
         differenceTerm = parametersDiff[i] - np.dot(inverseHessianEstimate, gradientsDiff[i])
-        term1 = np.dot(parametersDiff[i], differenceTerm)
-        term2 = np.linalg.norm(parametersDiff) * np.linalg.norm(differenceTerm)
-
-        # if (term1 > sampler.settings['SR1UpdateLimit'] * term2):
-        rankOneUpdate = np.outer(differenceTerm, differenceTerm) 
-        rankOneUpdate /= np.dot(differenceTerm, gradientsDiff[i])
-        inverseHessianEstimate += rankOneUpdate
-        noEffectiveSamples += 1
+        if np.dot(differenceTerm, gradientsDiff[i]) != 0.0:
+            rankOneUpdate = np.outer(differenceTerm, differenceTerm) 
+            rankOneUpdate /= np.dot(differenceTerm, gradientsDiff[i])
+            inverseHessianEstimate += rankOneUpdate
+            noEffectiveSamples += 1
     
-    if noEffectiveSamples == 0:
-        inverseHessianEstimate = -inverseHessianEstimate
     return -inverseHessianEstimate, noEffectiveSamples

@@ -44,7 +44,7 @@ def checkSettings(sampler):
 
 
 # Print small progress reports
-def printProgressReportToScreen(sampler):
+def printProgressReportToScreen(sampler, maxIACTLag=100):
     iteration = sampler.currentIteration
 
     print("################################################################################################ ")
@@ -54,28 +54,28 @@ def printProgressReportToScreen(sampler):
     print(["%.4f" % v for v in sampler.restrictedParameters[iteration - 1, :]])
     print("")
     print(" Proposed next state of the Markov chain:         ")
-    print(["%.4f" % v for v in sampler.restrictedParameters[iteration, :]])
+    print(["%.4f" % v for v in sampler.proposedRestrictedParameters[iteration, :]])
     print("")
     print(" Current posterior mean estimate: ")
     print(["%.4f" % v for v in np.mean(sampler.restrictedParameters[range(iteration), :], axis=0)])
     print("")
     print(" Current acceptance rate:                         ")
     print("%.4f" % np.mean(sampler.accepted[range(iteration)]))
-    # if (sampler.iter > (sampler.nBurnIn * 1.5)):
-    #     print("")
-    #     print(" Current IACT values:                         ")
-    #     print(["%.2f" % v for v in sampler.calcIACT()])
-    #     print("")
-    #     print(" Current log-SJD value:                          ")
-    #     print(str(np.log(sampler.calcSJD())))
-    # if 'BFGS' in sampler.settings['hessianEstimate'] or 'SR1' in sampler.settings['hessianEstimate']:
-    #     if (iteration > sampler.settings['memoryLength']):
-    #         noEffectiveSamples = sampler.noEffectiveSamples[range(iteration)]
-    #         idx = np.where(noEffectiveSamples > 0)
-    #         if idx:
-    #             print("")
-    #             print(" Mean number of samples for Hessian estimate:           ")
-    #             print("%.4f" % np.mean(noEffectiveSamples[idx]))
+    if (iteration > (sampler.settings['noBurnInIters'] * 1.5)):
+        print("")
+        print(" Current IACT values:                         ")
+        print(["%.2f" % v for v in sampler.calcIACT()])
+        print("")
+        print(" Current log-SJD value:                          ")
+        print(str(np.log(sampler.calcSJD())))
+    if sampler.settings['hessianEstimate'] is not 'kalman':
+        if (iteration > sampler.settings['memoryLength']):
+            noEffectiveSamples = sampler.noEffectiveSamples[range(iteration)]
+            idx = np.where(noEffectiveSamples > 0)
+            if idx:
+                print("")
+                print(" Mean number of samples for Hessian estimate:           ")
+                print("%.4f" % np.mean(noEffectiveSamples[idx]))
     
     print("################################################################################################ ")
 
