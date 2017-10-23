@@ -71,8 +71,8 @@ def printProgressReportToScreen(sampler, maxIACTLag=100):
     if sampler.settings['hessianEstimate'] is not 'kalman':
         if (iteration > sampler.settings['memoryLength']):
             noEffectiveSamples = sampler.noEffectiveSamples[range(iteration)]
-            idx = np.where(noEffectiveSamples > 0)
-            if idx:
+            idx = np.where(noEffectiveSamples > 0)[0]
+            if len(idx) > 0:
                 print("")
                 print(" Mean number of samples for Hessian estimate:           ")
                 print("%.4f" % np.mean(noEffectiveSamples[idx]))
@@ -99,19 +99,6 @@ def isHessianValid(x):
     if len(d) < len(s):
         return False
     return True
-
-# Zero-variance post processing with linear correction
-def zvpost_linear_prototype(sampler):
-    ahat = np.zeros((sampler.nPars, sampler.nPars))
-    for i in range(sampler.nPars):
-        z = -0.5 * sampler.gradient[sampler.nBurnIn:sampler.nIter, :]
-        g = sampler.th[sampler.nBurnIn:sampler.nIter, i]
-
-        covAll = np.cov(np.vstack((z.transpose(), g.transpose())))
-        Sigma = np.linalg.inv(covAll[0:3, 0:3])
-        sigma = covAll[0:3, 3]
-        ahat[:, i] = - np.dot(Sigma, sigma)
-    sampler.thzv = sampler.th[sampler.nBurnIn:sampler.nIter, :] + np.dot(z, ahat)
 
 # Logit transform
 def logit(x):

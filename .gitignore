@@ -2,6 +2,9 @@
 .R~
 .m~
 .pyc
+runs/
+.pickle
+*.pickle
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

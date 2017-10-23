@@ -12,6 +12,8 @@ from parameter.mcmc.performanceMeasures import calcESS
 from parameter.mcmc.performanceMeasures import calcIACT
 from parameter.mcmc.performanceMeasures import calcSJD
 
+from parameter.mcmc.varianceReduction import zvpost_linear_prototype
+
 from parameter.mcmc.gradientEstimation import getGradient
 from parameter.mcmc.gradientEstimation import getNaturalGradient
 from parameter.mcmc.hessianEstimation import getHessian
@@ -20,9 +22,6 @@ warnings.filterwarnings("error")
 
 class ParameterEstimator(object):
     #zvpost_linear = zvpost_linear_prototype
-    #calcIACT = calcIACT_prototype
-    #calcSJacobianD = calcSJacobianD_prototype
-    #calcESS = calculateESS_prototype
     
     ###########################################################################
     def __init__(self, settings):
@@ -30,6 +29,9 @@ class ParameterEstimator(object):
         self.currentIteration = 0
         self.useGradientInformation = False
         self.useHesssianInformation = False
+
+        self.noCorrectedHessianEstimates = 0
+        self.hessianEstimateCorrectedAtIteration = []
 
     ###########################################################################
     def initialise(self, model, samplerType):
@@ -82,7 +84,10 @@ class ParameterEstimator(object):
         self.gradient = np.zeros((noIters, noParametersToEstimate))
         self.naturalGradient = np.zeros((noIters, noParametersToEstimate))
         self.hessian = np.zeros((noIters, noParametersToEstimate, noParametersToEstimate))       
-
+        # if self.useHesssianInformation:
+        #     if self.settings['hessianEstimate'] is not 'Kalman':
+        #         if self.currentIteration > self.settings['memoryLength']:
+        #             offset = self.settings['memoryLength']
         self.proposedGradient = np.zeros((noIters, noParametersToEstimate))
         self.proposedNaturalGradient = np.zeros((noIters, noParametersToEstimate))
         self.proposedHessian = np.zeros((noIters, noParametersToEstimate, noParametersToEstimate))
@@ -142,16 +147,22 @@ class ParameterEstimator(object):
     
     ###########################################################################
     def rejectParameters(self):
+        offset = 1
+        # if self.useHesssianInformation:
+        #     if self.settings['hessianEstimate'] is not 'Kalman':
+        #         if self.currentIteration > self.settings['memoryLength']:
+        #             offset = self.settings['memoryLength']
+
         i = self.currentIteration
-        self.restrictedParameters[i, :] = self.restrictedParameters[i - 1, :]
-        self.unrestrictedParameters[i, :] = self.unrestrictedParameters[i - 1, :]
-        self.logJacobian[i] = self.logJacobian[i - 1]
-        self.logPrior[i, :] = self.logPrior[i - 1, :]
-        self.logLikelihood[i, :] = self.logLikelihood[i - 1, :]
-        self.states[i, :] = self.states[i - 1, :]
-        self.gradient[i, :] = self.gradient[i - 1, :]
-        self.naturalGradient[i, :] = self.naturalGradient[i - 1, :]
-        self.hessian[i, :, :] = self.hessian[i - 1, :, :]
+        self.restrictedParameters[i, :] = self.restrictedParameters[i - offset, :]
+        self.unrestrictedParameters[i, :] = self.unrestrictedParameters[i - offset, :]
+        self.logJacobian[i] = self.logJacobian[i - offset]
+        self.logPrior[i, :] = self.logPrior[i - offset, :]
+        self.logLikelihood[i, :] = self.logLikelihood[i - offset, :]
+        self.states[i, :] = self.states[i - offset, :]
+        self.gradient[i, :] = self.gradient[i - offset, :]
+        self.naturalGradient[i, :] = self.naturalGradient[i - offset, :]
+        self.hessian[i, :, :] = self.hessian[i - offset, :, :]
         self.accepted[i] = 0.0
 
     ###########################################################################
@@ -167,7 +178,7 @@ class ParameterEstimator(object):
             self.states[0, :] = state.filteredStateEstimate
             
             self.gradient[0, :] = getGradient(self, state)
-            self.hessian[0, :, :] = getHessian(self, state)
+            self.hessian[0, :, :] = getHessian(self, state, self.gradient[0, :])
             self.naturalGradient[0, :] = getNaturalGradient(self, self.gradient[0, :], self.hessian[0, :, :])
 
             self.restrictedParameters[0, :] = self.settings['initialParameters']
@@ -202,14 +213,20 @@ class ParameterEstimator(object):
     def computeAcceptanceProbability(self, state, model):
         noParameters = self.settings['noParametersToEstimate']
 
-        currentRestrictedParameters = self.restrictedParameters[self.currentIteration - 1, :]
-        currentUnrestrictedParameters = self.unrestrictedParameters[self.currentIteration - 1, :]
-        currentLogJacobian = self.logJacobian[self.currentIteration - 1, :]
-        currentLogPrior = self.logPrior[self.currentIteration - 1, :]
-        currentLogLikelihood = self.logLikelihood[self.currentIteration - 1, :]
-        currentNaturalGradient = self.naturalGradient[self.currentIteration - 1, :]
-        currentHessian = self.hessian[self.currentIteration - 1, :, :]
-        currentStates = self.states[self.currentIteration - 1, :]
+        offset = 1
+        # if self.useHesssianInformation:
+        #     if self.settings['hessianEstimate'] is not 'Kalman':
+        #         if self.currentIteration > self.settings['memoryLength']:
+        #             offset = self.settings['memoryLength']
+
+        currentRestrictedParameters = self.restrictedParameters[self.currentIteration - offset, :]
+        currentUnrestrictedParameters = self.unrestrictedParameters[self.currentIteration - offset, :]
+        currentLogJacobian = self.logJacobian[self.currentIteration - offset, :]
+        currentLogPrior = self.logPrior[self.currentIteration - offset, :]
+        currentLogLikelihood = self.logLikelihood[self.currentIteration - offset, :]
+        currentNaturalGradient = self.naturalGradient[self.currentIteration - offset, :]
+        currentHessian = self.hessian[self.currentIteration - offset, :, :]
+        currentStates = self.states[self.currentIteration - offset, :]
 
         proposedRestrictedParameters = self.proposedRestrictedParameters[self.currentIteration, :]
         proposedUnrestrictedParameters = self.proposedUnrestrictedParameters[self.currentIteration, :]
@@ -224,7 +241,7 @@ class ParameterEstimator(object):
             proposedStates = state.filteredStateEstimate
 
             proposedGradient = getGradient(self, state)
-            proposedHessian = getHessian(self, state)
+            proposedHessian = getHessian(self, state, proposedGradient)
             proposedNaturalGradient = getNaturalGradient(self, proposedGradient, proposedHessian)
             
             if isHessianValid(proposedHessian):
@@ -250,10 +267,10 @@ class ParameterEstimator(object):
                         acceptProb = 0.0
                         print("Rejected as parameter update violates trust region.")
             else:
-                print("Estimate of inverse Hessian is not PSD or is singular, so rejecting...")
+                print("Iteration: " + str(self.currentIteration) + ", estimate of inverse Hessian is not PSD or is singular, so rejecting...")
                 #print(proposedHessian)
                 #print(np.linalg.eig(proposedHessian)[0])
-                #acceptProb = 0.0
+                acceptProb = 0.0
 
             if self.settings['verbose'] and isHessianValid(proposedHessian):
                 print("currentRestrictedParameters" + str(currentRestrictedParameters) + ".")
@@ -292,3 +309,7 @@ class ParameterEstimator(object):
 
     def calcSJD(self):
         return calcSJD(self)
+    
+    def zeroVariancePostProcessing(self):
+        varianceReducedUnrestrictedVariables = zvpost_linear_prototype(self)
+        return varianceReducedUnrestrictedVariables

@@ -45,15 +45,18 @@ def run():
                   'verbose': False,
                   'waitForENTER': False,
                   'informOfHessianCorrection': True,
+                  'initialHessian': 1e-2,
+                  # Kalman, BFGS, BFGSignoreCurvatureCondition, BFGSdamped, SR1
                   'hessianEstimate': 'SR1',
+                  'hessianEstimateAdaptInitialisation': False,
                   'SR1UpdateLimit': 1e-10,
                   'printWarningsForUnstableSystems': True,
-                  'memoryLength': 20,
-                  'initialHessian': 1e-2,
+                  'memoryLength': 50,
                   'trustRegionSize': None,
                   'hessianCorrectionApproach': 'replace',
                   'hessianEstimateOnlyAcceptedInformation': True
                   }
+    
     mhSampler = metropolisHastings.ParameterEstimator(mhSettings)
     mhSampler.run(kalman, inferenceModel, 'mh2')
     mhSampler.plot()
