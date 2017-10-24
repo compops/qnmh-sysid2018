@@ -9,42 +9,9 @@ from scipy.special import gammaln
 import matplotlib.pylab as plt
 from palettable.colorbrewer.qualitative import Dark2_8
 
-def checkSettings(sampler):
-    if not 'noIters' in sampler.settings:
-        sampler.settings.update({'noIters': 1000})
-        print("Missing settings: noIters, defaulting to " + str(sampler.settings['noIters']) + ".")
-
-    if not 'noBurnInIters' in sampler.settings:
-        sampler.settings.update({'noBurnInIters': 250})
-        print("Missing settings: noBurnInIters, defaulting to " + str(sampler.settings['noBurnInIters']) + ".")
-
-    if not 'stepSize' in sampler.settings:
-        sampler.settings.update({'stepSize': 0.10})
-        print("Missing settings: stepSize, defaulting to " + str(sampler.settings['stepSize']) + ".")      
-
-    if not 'noIters' in sampler.settings:
-        sampler.settings.update({'noIters': 1000})
-        print("Missing settings: noIterself, defaulting to " + str(sampler.settings['noIters']) + ".")
-
-    if not 'noBurnInIters' in sampler.settings:
-        sampler.settings.update({'noBurnInIters': 250})
-        print("Missing settings: noBurnInIters, defaulting to " + str(sampler.settings['noBurnInIters']) + ".")
-
-    if not 'stepSize' in sampler.settings:
-        sampler.settings.update({'stepSize': 1.0})
-        print("Missing settings: stepSize, defaulting to " + str(sampler.settings['stepSize']) + ".")   
-
-    if not 'iterationsBetweenProgressReports' in sampler.settings: 
-        sampler.settings.update({'nProgressReport': 100})
-        print("Missing settings: nProgressReport, defaulting to " + str(sampler.settings['nProgressReport']) + ".")   
-
-    if not 'printWarningsForUnstableSystems' in sampler.settings: 
-        sampler.settings.update({'printWarningsForUnstableSystems': False})
-        print("Missing settings: printWarningsForUnstableSystems, defaulting to " + str(sampler.settings['printWarningsForUnstableSystems']) + ".")   
-
 
 # Print small progress reports
-def printProgressReportToScreen(sampler, maxIACTLag=100):
+def print_progress_report(sampler, maxIACTLag=100):
     iteration = sampler.currentIteration
 
     print("################################################################################################ ")
@@ -76,39 +43,14 @@ def printProgressReportToScreen(sampler, maxIACTLag=100):
                 print("")
                 print(" Mean number of samples for Hessian estimate:           ")
                 print("%.4f" % np.mean(noEffectiveSamples[idx]))
-    
+
     print("################################################################################################ ")
 
-# Check if dirs for outputs exists, otherwise create them
-def ensure_dir(f):
-    d = os.path.dirname(f)
-    if not os.path.exists(d):
-        os.makedirs(d)
 
-# Check if a matrix is positive semi-definite by checking for negative eigenvalues
-def isPositiveSemiDefinite(x):
-    return np.all(np.linalg.eigvals(x) > 0)
 
-# Check if a matrix is singular by checking for negative eigenvalues
-def isHessianValid(x):
-    s, u = eigh(x, lower=True, check_finite=True)
-    eps = _eigvalsh_to_eps(s, None, None)
-    if np.min(s) < -eps:
-        return False
-    d = s[s > eps]
-    if len(d) < len(s):
-        return False
-    return True
 
-# Logit transform
-def logit(x):
-    return np.log(x / (1.0 - x))
 
-# Inverse logit transform
-def invlogit(x):
-    return np.exp(x) / (1.0 + np.exp(x))
-
-def plotResults(sampler):
+def plot_results(sampler):
     noBins = int(np.floor(np.sqrt(len(sampler.results['parameterTrace'][:, 0]))))
     noParameters = sampler.settings['noParametersToEstimate']
     parameterNames = sampler.settings['parametersToEstimate']
@@ -118,19 +60,19 @@ def plotResults(sampler):
         plt.subplot(noParameters, 4, 4 * i + 1)
         plt.hist(sampler.results['parameterTrace'][:, i], bins=noBins, color = Dark2_8.mpl_colors[i])
         plt.ylabel("Marginal posterior probability of " + parameterNames[i])
-        plt.xlabel("iteration")        
+        plt.xlabel("iteration")
         plt.subplot(noParameters, 4, 4 * i + 2)
         plt.plot(sampler.results['parameterTrace'][:, i], color = Dark2_8.mpl_colors[i])
         plt.ylabel("Parameter trace of " + parameterNames[i])
-        plt.xlabel("iteration")        
+        plt.xlabel("iteration")
         plt.subplot(noParameters, 4, 4 * i + 3)
         plt.plot(sampler.results['proposedRestrictedParameters'][:, i], color = Dark2_8.mpl_colors[i])
         plt.ylabel("Proposed trace of " + parameterNames[i])
-        plt.xlabel("iteration") 
+        plt.xlabel("iteration")
         plt.subplot(noParameters, 4, 4 * i + 4)
         plt.plot(sampler.results['proposedNaturalGradient'][:, i], color = Dark2_8.mpl_colors[i])
         plt.ylabel("natural gradient of " + parameterNames[i])
-        plt.xlabel("iteration")        
+        plt.xlabel("iteration")
     plt.show()
 
 def truncateContribution(x, limit):
@@ -140,19 +82,12 @@ def truncateContribution(x, limit):
     if isinstance(x, float):
         sign = np.sign(x)
         output = sign * np.min((limit, np.abs(x)))
-    
+
     if isinstance(x, np.ndarray):
         output = np.zeros(len(x))
         for i in range(len(x)):
             sign = np.sign(x[i])
             output[i] = sign * np.min((limit, np.abs(x[i])))
-    
+
     return output
 
-# Calculate the log-pdf of a multivariate Gaussian with mean vector mu and covariance matrix S
-def logPDFGaussian(x, mu, S):
-    nx = len(S)
-    norm_coeff = nx * np.log(2.0 * np.pi) + np.linalg.slogdet(S)[1]
-    err = x - mu
-    numerator = np.dot(np.dot(err, np.linalg.pinv(S)), err.transpose())
-    return -0.5 * (norm_coeff + numerator)
