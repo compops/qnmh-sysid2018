@@ -5,7 +5,7 @@ from models.linear_gaussian_model import SystemModel
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
 from state.kalman_methods import KalmanMethods
 
-def run():
+def run(new_settings=None, sim_name='test', sim_desc='...'):
     # System model
     sys_model = SystemModel()
     sys_model.params['mu'] = 0.20
@@ -37,10 +37,14 @@ def run():
                    'qn_memory_length': 20,
                    'qn_initial_hessian': 'fixed',
                    'qn_strategy': 'bfgs',
-                   'qn_bfgs_curvature_cond': 'damped' # ignore, enforce
+                   'qn_bfgs_curvature_cond': 'damped', # ignore, enforce
                    'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
                    'qn_only_accepted_info': True
                    }
+
+    if new_settings:
+        mh_settings.update(new_settings)
+
     mh = MetropolisHastings(sys_model, 'qmh', mh_settings)
     mh.run(kf)
-    mh.plot()
+    mh.save_to_file(output_path='results', sim_name=sim_name, sim_desc=sim_desc)

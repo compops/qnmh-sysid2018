@@ -27,8 +27,8 @@ def run():
     kf = KalmanMethods(kf_settings)
 
     # Metropolis-Hastings
-    mh_settings = {'no_iters': 200,
-                   'no_burnin_iters': 100,
+    mh_settings = {'no_iters': 1000,
+                   'no_burnin_iters': 250,
                    'step_size': 0.5,
                    'base_hessian': np.eye(3) * 0.05**2,
                    'initial_params': (0.2, 0.5, 1.0),
