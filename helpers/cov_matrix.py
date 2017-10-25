@@ -13,11 +13,12 @@ def is_valid_covariance_matrix(cov_matrix):
     """Check if a matrix is positive definite (PD) by checking for
     negative eigenvalues and also if the matrix is ill conditioned (close to
     singular). Returns True if PD and well conditioned and False otherwise."""
-    eigenvalues = eigh(cov_matrix, lower=True, check_finite=True)
-    eps = _eigvalsh_to_eps(eigenvalues, None, None)
-    if np.min(eigenvalues) < -eps:
+    eig_values = eigh(cov_matrix, lower=True, check_finite=True)[0]
+
+    eps = _eigvalsh_to_eps(eig_values, None, None)
+    if np.min(eig_values) < -eps:
         return False
-    large_eigenvalues = eigenvalues[eigenvalues > eps]
-    if len(large_eigenvalues) < len(eigenvalues):
+    large_eig_values = eig_values[eig_values > eps]
+    if len(large_eig_values) < len(eig_values):
         return False
     return True

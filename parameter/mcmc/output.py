@@ -9,85 +9,63 @@ from scipy.special import gammaln
 import matplotlib.pylab as plt
 from palettable.colorbrewer.qualitative import Dark2_8
 
-
 # Print small progress reports
-def print_progress_report(sampler, maxIACTLag=100):
-    iteration = sampler.currentIteration
+def print_progress_report(mcmc, max_iact_lag=100):
+    iteration = mcmc.current_iter
 
     print("################################################################################################ ")
-    print(" Iteration: " + str(iteration + 1) + " of : " + str(sampler.settings['noIters']) + " completed.")
+    print(" Iteration: " + str(iteration + 1) + " of : " + str(mcmc.settings['no_iters']) + " completed.")
     print("")
     print(" Current state of the Markov chain:               ")
-    print(["%.4f" % v for v in sampler.restrictedParameters[iteration - 1, :]])
+    print(["%.4f" % v for v in mcmc.params[iteration - 1, :]])
     print("")
     print(" Proposed next state of the Markov chain:         ")
-    print(["%.4f" % v for v in sampler.proposedRestrictedParameters[iteration, :]])
+    print(["%.4f" % v for v in mcmc.prop_params[iteration, :]])
     print("")
     print(" Current posterior mean estimate: ")
-    print(["%.4f" % v for v in np.mean(sampler.restrictedParameters[range(iteration), :], axis=0)])
+    print(["%.4f" % v for v in np.mean(mcmc.params[range(iteration), :], axis=0)])
     print("")
     print(" Current acceptance rate:                         ")
-    print("%.4f" % np.mean(sampler.accepted[range(iteration)]))
-    if (iteration > (sampler.settings['noBurnInIters'] * 1.5)):
+    print("%.4f" % np.mean(mcmc.accepted[range(iteration)]))
+    if (iteration > (mcmc.settings['no_burnin_iters'] * 1.5)):
         print("")
         print(" Current IACT values:                         ")
-        print(["%.2f" % v for v in sampler.calcIACT()])
+        print(["%.2f" % v for v in mcmc.compute_iact()])
         print("")
         print(" Current log-SJD value:                          ")
-        print(str(np.log(sampler.calcSJD())))
-    if sampler.settings['hessianEstimate'] is not 'kalman':
-        if (iteration > sampler.settings['memoryLength']):
-            noEffectiveSamples = sampler.noEffectiveSamples[range(iteration)]
-            idx = np.where(noEffectiveSamples > 0)[0]
+        print(str(np.log(mcmc.compute_sjd())))
+    if mcmc.settings['hessian_estimate'] is not 'kalman':
+        if (iteration > mcmc.settings['qn_memory_length']):
+            no_samples_hess_est = mcmc.no_samples_hess_est[range(iteration)]
+            idx = np.where(no_samples_hess_est > 0)[0]
             if len(idx) > 0:
                 print("")
                 print(" Mean number of samples for Hessian estimate:           ")
-                print("%.4f" % np.mean(noEffectiveSamples[idx]))
+                print("%.4f" % np.mean(no_samples_hess_est[idx]))
 
     print("################################################################################################ ")
 
-
-
-
-
-def plot_results(sampler):
-    noBins = int(np.floor(np.sqrt(len(sampler.results['parameterTrace'][:, 0]))))
-    noParameters = sampler.settings['noParametersToEstimate']
-    parameterNames = sampler.settings['parametersToEstimate']
+def plot_results(mcmc):
+    noBins = int(np.floor(np.sqrt(len(mcmc.results['trace'][:, 0]))))
+    noParameters = mcmc.model.no_params_to_estimate
+    parameterNames = mcmc.model.params_to_estimate
 
     plt.figure()
     for i in range(noParameters):
         plt.subplot(noParameters, 4, 4 * i + 1)
-        plt.hist(sampler.results['parameterTrace'][:, i], bins=noBins, color = Dark2_8.mpl_colors[i])
+        plt.hist(mcmc.results['trace'][:, i], bins=noBins, color = Dark2_8.mpl_colors[i])
         plt.ylabel("Marginal posterior probability of " + parameterNames[i])
         plt.xlabel("iteration")
         plt.subplot(noParameters, 4, 4 * i + 2)
-        plt.plot(sampler.results['parameterTrace'][:, i], color = Dark2_8.mpl_colors[i])
+        plt.plot(mcmc.results['trace'][:, i], color = Dark2_8.mpl_colors[i])
         plt.ylabel("Parameter trace of " + parameterNames[i])
         plt.xlabel("iteration")
         plt.subplot(noParameters, 4, 4 * i + 3)
-        plt.plot(sampler.results['proposedRestrictedParameters'][:, i], color = Dark2_8.mpl_colors[i])
+        plt.plot(mcmc.results['prop_params'][:, i], color = Dark2_8.mpl_colors[i])
         plt.ylabel("Proposed trace of " + parameterNames[i])
         plt.xlabel("iteration")
         plt.subplot(noParameters, 4, 4 * i + 4)
-        plt.plot(sampler.results['proposedNaturalGradient'][:, i], color = Dark2_8.mpl_colors[i])
+        plt.plot(mcmc.results['prop_grad'][:, i], color = Dark2_8.mpl_colors[i])
         plt.ylabel("natural gradient of " + parameterNames[i])
         plt.xlabel("iteration")
     plt.show()
-
-def truncateContribution(x, limit):
-    if not limit:
-        return x
-
-    if isinstance(x, float):
-        sign = np.sign(x)
-        output = sign * np.min((limit, np.abs(x)))
-
-    if isinstance(x, np.ndarray):
-        output = np.zeros(len(x))
-        for i in range(len(x)):
-            sign = np.sign(x[i])
-            output[i] = sign * np.min((limit, np.abs(x[i])))
-
-    return output
-

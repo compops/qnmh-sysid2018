@@ -1,17 +1,8 @@
-# import scripts.kalmanSmoother as kalmanSmoother
-# kalmanSmoother.run()
-
-# import scripts.zeroOrderMetropolisHastings as zeroOrderMetropolisHastings
-# zeroOrderMetropolisHastings.run()
-
-# import scripts.firstOrderMetropolisHastings as firstOrderMetropolisHastings
-# firstOrderMetropolisHastings.run()
-
-# import scripts.secondOrderMetropolisHastings as secondOrderMetropolisHastings
-# mhSampler = secondOrderMetropolisHastings.run()
-
-import scripts.quasiNewtonMetropolisHastings as quasiNewtonMetropolisHastings
-mhSampler = quasiNewtonMetropolisHastings.run()
+#import scripts.kalman_smoother as app
+#import scripts.mh_zero_order as app
+#import scripts.mh_first_order as app
+#import scripts.mh_second_order as app
+import scripts.qmh_sr1 as app
 
 # import json
 # output = {}
@@ -23,3 +14,6 @@ mhSampler = quasiNewtonMetropolisHastings.run()
 # output.update({'logLikelihood': mhSampler.logLikelihood[900:].tolist()})
 # with open('tests/dataFromRun.json', 'w') as f:
 #     json.dump(output, f, ensure_ascii=False)
+
+app.run()
+

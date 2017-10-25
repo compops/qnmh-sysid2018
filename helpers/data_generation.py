@@ -8,12 +8,12 @@ def import_data(model, file_name):
     data_frame = pd.read_csv(file_name)
 
     if 'observation' in list(data_frame):
-        obs = data_frame['observation'].values[1:(model.no_obs + 1)]
-        obs = np.array(obs, copy=True).reshape((model.no_obs, 1))
+        obs = data_frame['observation'].values[0:(model.no_obs + 1)]
+        obs = np.array(obs, copy=True).reshape((model.no_obs + 1, 1))
         model.obs = obs
 
     if 'state' in list(data_frame):
-        states = data_frame['state'].values[0:(model.no_obs  +1)]
+        states = data_frame['state'].values[0:(model.no_obs + 1)]
         states = np.array(states, copy=True).reshape((model.no_obs + 1, 1))
         model.states = states
 
@@ -24,10 +24,10 @@ def generate_data(model, file_name=None):
     file_name if required."""
     model.states = np.zeros((model.no_obs + 1, 1))
     model.obs = np.zeros((model.no_obs + 1, 1))
-    model.states[0] = model.initialState
+    model.states[0] = model.initial_state
 
     for i in range(1, model.no_obs + 1):
-        model.states[i] = model.generate_states(model.states[i-1])
+        model.states[i] = model.generate_state(model.states[i-1])
         model.obs[i] = model.generate_obs(model.states[i])
 
     if file_name:

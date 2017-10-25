@@ -3,6 +3,7 @@ import numpy as np
 from scipy.stats import norm
 
 from helpers.data_generation import generate_data, import_data
+from helpers.inference_model import create_inference_model, fix_true_params
 from helpers.model_params import store_free_params, store_params
 from helpers.model_params import get_free_params, get_params
 from helpers.distributions import normal
@@ -89,8 +90,12 @@ class SystemModel(object):
             hyppar1 = self.params_prior[param][1]
             hyppar2 = self.params_prior[param][2]
             prior.update({param: dist.logpdf(self.params[param], hyppar1, hyppar2)})
-        prior_sum = [prior[item] for item in prior]
-        return prior, np.sum(prior_sum[self.params_to_estimate_idx])
+
+        prior_sum = 0.0
+        for param in self.params_to_estimate:
+            prior_sum += prior[param]
+
+        return prior, prior_sum
 
     def log_prior_gradient(self):
         """Returns the gradient of the logarithm of the prior distributions as
@@ -195,3 +200,5 @@ class SystemModel(object):
     store_params = store_params
     get_free_params = get_free_params
     get_params = get_params
+    create_inference_model = create_inference_model
+    fix_true_params = fix_true_params
