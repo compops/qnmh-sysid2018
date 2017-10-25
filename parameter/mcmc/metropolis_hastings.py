@@ -7,6 +7,8 @@ from helpers.cov_matrix import is_valid_covariance_matrix
 
 from parameter.mcmc.output import plot_results
 from parameter.mcmc.output import print_progress_report
+from parameter.mcmc.output import store_results_to_file
+from parameter.mcmc.output import store_results_to_db
 
 from parameter.mcmc.performance_measures import compute_ess
 from parameter.mcmc.performance_measures import compute_iact
@@ -157,18 +159,7 @@ class MetropolisHastings(object):
             flag = np.remainder(i + 1, flag) == 0
             if flag:
                 print_progress_report(self)
-            #self.printSimulationToFile()
-
-        idx = range(no_burnin_iters, no_iters)
-        res = {}
-        res.update({'param_est': np.mean(self.free_params[idx, :], axis=0)})
-        res.update({'state_est': np.mean(self.states[idx, :], axis=0)})
-        res.update({'state_est_var': np.var(self.states[idx, :], axis=0)})
-        res.update({'trace': self.free_params[idx, :]})
-        res.update({'prop_free_params': self.prop_free_params[idx, :]})
-        res.update({'prop_params': self.prop_params[idx, :]})
-        res.update({'prop_grad': self.prop_nat_grad[idx, :]})
-        self.results = res
+        print("Run of MH algorithm complete...")
 
     def _accept_params(self):
         """Record the accepted parameters."""
@@ -347,47 +338,12 @@ class MetropolisHastings(object):
             print("Proposed parameters: " + str(prop_free_params) +
                   " results in an unstable system so rejecting.")
 
-    def plot(self):
-        """Plots the results from a run of the Metropolis-Hastings algorithm."""
-        plot_results(self)
-
-    def compute_ess(self, max_lag=None):
-        """Computes the effective sample size from a run of the
-           Metropolis-Hastings algorithm."""
-        return compute_ess(self, max_lag)
-
-    def compute_iact(self, max_lag=None):
-        """Computes the integrated autocorrelation time from a run of the
-           Metropolis-Hastings algorithm."""
-        return compute_iact(self, max_lag)
-
-    def compute_sjd(self):
-        """Computes the squared jump distance from a run of the
-           Metropolis-Hastings algorithm."""
-        return compute_sjd(self)
-
-    def zero_variance_linear(self):
-        """Carries out zero-variance post-processing of the Markov chain."""
-        return zero_variance_linear(self)
-
-    def _check_settings(self):
-        if not 'no_iters' in self.settings:
-            self.settings.update({'no_iters': 1000})
-            print("Missing settings: no_iters, defaulting to " +
-                  str(self.settings['no_iters']) + ".")
-
-        if not 'no_burin_iters' in self.settings:
-            self.settings.update({'no_burin_iters': 250})
-            print("Missing settings: no_burin_iters, defaulting to " +
-                  str(self.settings['no_burin_iters']) + ".")
-
-        if not 'step_size' in self.settings:
-            self.settings.update({'step_size': 0.10})
-            print("Missing settings: step_size, defaulting to " +
-                  str(self.settings['step_size']) + ".")
-
-        if not 'no_iters_between_progress_reports' in self.settings:
-            self.settings.update({'no_iters_between_progress_reports': 100})
-            print("Missing settings: no_iters_between_progress_reports, " +
-                  "defaulting to " +
-                  str(self.settings['no_iters_between_progress_reports']) + ".")
+    # Wrappers
+    plot = plot_results
+    print_progress_report = print_progress_report
+    save_to_db = store_results_to_db
+    save_to_file = store_results_to_file
+    compute_ess = compute_ess
+    compute_iact = compute_iact
+    compute_sjd = compute_sjd
+    zero_variance_linear = zero_variance_linear

@@ -27,8 +27,8 @@ def run():
     kf = KalmanMethods(kf_settings)
 
     # Metropolis-Hastings
-    mh_settings = {'no_iters': 1000,
-                   'no_burnin_iters': 250,
+    mh_settings = {'no_iters': 200,
+                   'no_burnin_iters': 100,
                    'step_size': 0.5,
                    'base_hessian': np.eye(3) * 0.05**2,
                    'initial_params': (0.2, 0.5, 1.0),
@@ -43,3 +43,8 @@ def run():
     mh = MetropolisHastings(sys_model, 'qmh', mh_settings)
     mh.run(kf)
     mh.plot()
+    mh.save_to_file(output_path='results',
+                    sim_name='sr1_replace_fixed',
+                    sim_desc='SR1 estimation of Hessian with replacement ' +
+                              'strategy and fixed initial Hessian'
+    )

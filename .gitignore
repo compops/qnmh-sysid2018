@@ -2,7 +2,7 @@
 .R~
 .m~
 .pyc
-runs/
+results/
 .pickle
 *.pickle
 

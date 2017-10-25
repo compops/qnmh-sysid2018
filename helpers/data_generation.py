@@ -16,6 +16,8 @@ def import_data(model, file_name):
         states = data_frame['state'].values[0:(model.no_obs + 1)]
         states = np.array(states, copy=True).reshape((model.no_obs + 1, 1))
         model.states = states
+    else:
+        model.states = None
 
     print("Loaded data from file: " + file_name + ".")
 
