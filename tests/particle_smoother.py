@@ -22,10 +22,10 @@ def run():
     sys_model.create_inference_model(params_to_estimate = ('mu', 'phi', 'sigma_v'))
 
     # Kalman filter and smoother
-    particle_settings = {'resampling_method': 'multinomial',
-                         'no_particles': 1000,
+    particle_settings = {'resampling_method': 'systematic',
+                         'no_particles': 5000,
                          'estimate_gradient': True,
-                         'fixed_lag': 5,
+                         'fixed_lag': 15,
                          'generate_initial_state': True,
                          'initial_state': 0.0
                         }

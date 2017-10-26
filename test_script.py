@@ -1,8 +1,8 @@
-import tests.kalman_smoother as kalman_smoother
-kalman_smoother.run()
+#import tests.kalman_smoother as kalman_smoother
+#kalman_smoother.run()
 
-# import tests.particle_smoother as particle_smoother
-# particle_smoother.run()
+import tests.particle_smoother as particle_smoother
+particle_smoother.run()
 
 # import tests.mh_zero_order as mh_zero_order
 # mh_zero_order.run()

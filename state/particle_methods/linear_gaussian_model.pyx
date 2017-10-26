@@ -103,15 +103,15 @@ def flps_lgss(observations, params, no_particles, fixed_lag, ancestors,
 
     # Run the fixed-lag smoother for the rest
     for i in range(0, no_obs-1):
-        ancestory = np.arange(0, no_particles)
+        particle_indicies = np.arange(0, no_particles)
         lag = np.min((i + fixed_lag, no_obs - 1))
 
         # Reconstruct particle trajectory
+        curr_ancestor = int(particle_indicies)
         for j in range(lag, i, -1):
-            next_ancestor = ancestory.astype(int)
-            curr_ancestor = ancestory.astype(int)
-            curr_ancestor = ancestors[curr_ancestor, j]
             curr_ancestor = curr_ancestor.astype(int)
+            next_ancestor = curr_ancestor
+            curr_ancestor = ancestors[curr_ancestor, j].astype(int)
 
         # Estimate state
         weighted_particles = particles[curr_ancestor, i] * weights[:, lag]

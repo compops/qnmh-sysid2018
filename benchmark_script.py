@@ -28,14 +28,14 @@ sim_name = 'qmh_sr1_flip'
 sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
            'such that the gradient gives a step of 0.01. Non-PD estimates ',
            'are corrected by flipping negative eigenvalues.')
-#qmh.run(new_settings=mh_settings, sim_name=sim_name, sim_desc=sim_desc)
+qmh.run(new_settings=mh_settings, sim_name=sim_name, sim_desc=sim_desc)
 
 mh_settings.update({'qn_strategy': 'sr1', 'hessian_correction': 'replace'})
 sim_name = 'qmh_sr1_hyb'
 sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
            'such that the gradient gives a step of 0.01. Non-PD estimates ',
            'are replaced with an empirical approximation of the Hessian.')
-#qmh.run(new_settings=mh_settings, sim_name=sim_name, sim_desc=sim_desc)
+qmh.run(new_settings=mh_settings, sim_name=sim_name, sim_desc=sim_desc)
 
 mh_settings.update({'qn_strategy': 'sr1', 'hessian_correction': 'replace',
                     'qn_sr1_safe_parameterisation': True,

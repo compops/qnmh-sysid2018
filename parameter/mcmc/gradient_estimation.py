@@ -41,4 +41,4 @@ def get_nat_gradient(mcmc, gradient, inverse_hessian):
 
     if mcmc.settings['verbose']:
         print("Current natural gradient: " + str(natural_gradient) + ".")
-    return natural_gradient
+    return np.real(natural_gradient)
