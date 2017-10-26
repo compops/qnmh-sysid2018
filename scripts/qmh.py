@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pylab as plt
 
 from models.linear_gaussian_model import SystemModel
+from state.kalman_methods.main import KalmanMethods
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
-from state.kalman_methods import KalmanMethods
 
 def run(new_settings=None, sim_name='test', sim_desc='...'):
     # System model

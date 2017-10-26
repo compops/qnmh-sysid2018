@@ -54,7 +54,7 @@ def run():
     # Mu
     sys_model.create_inference_model(params_to_estimate = ('mu'))
 
-    grid_mu = np.arange(-1, 1, 0.05)
+    grid_mu = np.arange(-0.95, 1, 0.05)
     log_like_mu = np.zeros(len(grid_mu))
     gradient_mu = np.zeros(len(grid_mu))
 
@@ -62,7 +62,7 @@ def run():
         sys_model.store_params(grid_mu[i])
         log_like_mu[i] = pf.log_like
         pf.smoother_linear_gaussian_model(sys_model)
-        gradient_mu[i] = pf.gradient_internal
+        gradient_mu[i] = pf.gradient_internal / (1.0 - sys_model.params['phi'])
 
     # Phi
     sys_model.create_inference_model(params_to_estimate = ('phi'))
@@ -76,6 +76,7 @@ def run():
         pf.smoother_linear_gaussian_model(sys_model)
         log_like_phi[i] = pf.log_like
         gradient_phi[i] = pf.gradient_internal
+        gradient_phi[i] /= (1.0 - sys_model.params['phi']**2)
 
     # Sigma_v
     sys_model.create_inference_model(params_to_estimate = ('sigma_v'))
@@ -85,11 +86,10 @@ def run():
     gradient_sigmav = np.zeros(len(grid_sigmav))
 
     for i in range(len(grid_sigmav)):
-        sys_model.store_params(np.log(grid_sigmav[i]))
+        sys_model.store_params(grid_sigmav[i])
         pf.smoother_linear_gaussian_model(sys_model)
         log_like_sigmav[i] = pf.log_like
-        gradient_sigmav[i] = pf.gradient_internal
-
+        gradient_sigmav[i] = pf.gradient_internal / grid_sigmav[i]
 
     #Plotting
     plt.figure()

@@ -36,7 +36,7 @@ def print_progress_report(mcmc, max_iact_lag=100):
         print(["%.2f" % v for v in mcmc.compute_iact()])
         print("")
         print(" Current log-SJD value:")
-        print(str(np.log(mcmc.compute_sjd())))
+        print(["%.2f" % v for v in mcmc.compute_sjd()])
     if mcmc.settings['hessian_estimate'] is not 'kalman':
         if (iter > mcmc.settings['qn_memory_length']):
             no_samples_hess_est = mcmc.no_samples_hess_est[range(iter)]

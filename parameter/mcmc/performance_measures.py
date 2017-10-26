@@ -13,7 +13,11 @@ def compute_iact(mcmc, max_lag=None):
         correlations = np.correlate(data, data, mode='full')[-no_data:]
         result = correlations / (variance * (np.arange(no_data, 0, -1)))
         if not max_lag:
-            max_lag = np.where(np.abs(result) < 1.96 / np.sqrt(no_data))[0][0]
+            max_lag = np.where(np.abs(result) < 1.96 / np.sqrt(no_data))
+            if len(max_lag[0] > 0):
+                max_lag = max_lag[0][0]
+            else:
+                max_lag = len(result)
         return 1.0 + 2.0 * np.sum(result[0:max_lag])
 
     output = np.zeros(mcmc.model.no_params_to_estimate)

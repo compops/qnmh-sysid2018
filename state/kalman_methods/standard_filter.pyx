@@ -51,5 +51,5 @@ def filter_helper(observations, params, initial_state, initial_cov):
 
 def norm_logpdf(parm, mean, stdev):
     """Helper for computing the log of the Gaussian pdf."""
-    quad_term = 0.5 / (stdev**2) * (parm - mean)**2
-    return -0.5 * np.log(2 * np.pi * stdev**2) - quad_term
+    quad_term = -0.5 / (stdev**2) * (parm - mean)**2
+    return -0.5 * np.log(2 * np.pi * stdev**2) + quad_term

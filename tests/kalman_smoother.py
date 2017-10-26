@@ -53,7 +53,7 @@ def run():
     # Mu
     sys_model.create_inference_model(params_to_estimate = ('mu'))
 
-    grid_mu = np.arange(-1, 1, 0.05)
+    grid_mu = np.arange(-0.95, 0.90, 0.05)
     log_like_mu = np.zeros(len(grid_mu))
     gradient_mu = np.zeros(len(grid_mu))
     natural_gradient_mu = np.zeros(len(grid_mu))
@@ -64,6 +64,7 @@ def run():
         kf.smoother(sys_model)
         gradient_mu[i] = kf.gradient_internal
         natural_gradient_mu[i] = kf.gradient_internal / kf.hessian_internal
+        gradient_mu[i] /= (1.0 - sys_model.params['phi'])
 
     # Phi
     sys_model.create_inference_model(params_to_estimate = ('phi'))
@@ -79,6 +80,7 @@ def run():
         log_like_phi[i] = kf.log_like
         gradient_phi[i] = kf.gradient_internal
         natural_gradient_phi[i] = kf.gradient_internal / kf.hessian_internal
+        gradient_phi[i] /= (1.0 - sys_model.params['phi']**2)
 
     # Sigma_v
     sys_model.create_inference_model(params_to_estimate = ('sigma_v'))
@@ -89,11 +91,12 @@ def run():
     natural_gradient_sigmav = np.zeros(len(grid_sigmav))
 
     for i in range(len(grid_sigmav)):
-        sys_model.store_params(np.log(grid_sigmav[i]))
+        sys_model.store_params(grid_sigmav[i])
         kf.smoother(sys_model)
         log_like_sigmav[i] = kf.log_like
         gradient_sigmav[i] = kf.gradient_internal
         natural_gradient_sigmav[i] = kf.gradient_internal / kf.hessian_internal
+        gradient_sigmav[i] /= grid_sigmav[i]
 
 
     #Plotting

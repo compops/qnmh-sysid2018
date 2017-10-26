@@ -3,15 +3,15 @@ import scripts.mh2 as mh
 import scripts.qmh as qmh
 
 mh_settings = {'no_iters': 5000,
-                'no_burnin_iters': 1000,
-                'step_size': 0.5,
-                'base_hessian': np.eye(3) * 0.05**2,
-                'initial_params': (0.2, 0.5, 1.0),
-                'hessian_correction_verbose': True,
-                'qn_initial_hessian': 'scaled_gradient',
-                'qn_initial_hessian_scaling': 0.01,
-                'verbose': False
-                }
+               'no_burnin_iters': 1000,
+               'step_size': 0.5,
+               'base_hessian': np.eye(3) * 0.05**2,
+               'initial_params': (0.0, 0.1, 0.2),
+               'hessian_correction_verbose': True,
+               'qn_initial_hessian': 'scaled_gradient',
+               'qn_initial_hessian_scaling': 0.01,
+               'verbose': False
+               }
 
 sim_name = 'mh2'
 #mh.run(new_settings=mh_settings, sim_name=sim_name)

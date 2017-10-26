@@ -32,7 +32,8 @@ def get_hessian(mcmc, state_estimator, prop_gradient=None):
         if mcmc.settings['hessian_estimate'] is 'quasi_newton':
             if mcmc.current_iter > mcmc.settings['qn_memory_length']:
                 inverse_hessian, no_samples = quasi_newton(mcmc, prop_gradient)
-                inverse_hessian *= step_size
+                if inverse_hessian is not None:
+                    inverse_hessian *= step_size
                 mcmc.no_samples_hess_est[mcmc.current_iter] = no_samples
                 return _correct_hessian(inverse_hessian, mcmc)
 
