@@ -179,10 +179,10 @@ class MetropolisHastings(object):
     def _reject_params(self):
         """Record the rejected parameters."""
         offset = 1
-        # if self.use_hessian_information:
-        #     if self.settings['hessianEstimate'] is not 'Kalman':
-        #         if self.current_iter > self.settings['memoryLength']:
-        #             offset = self.settings['memoryLength']
+        if self.use_hessian_information:
+            if self.settings['hessian_estimate'] is 'quasi_newton':
+                if self.current_iter > self.settings['qn_memory_length']:
+                    offset = self.settings['qn_memory_length']
         i = self.current_iter
         self.free_params[i, :] = self.free_params[i - offset, :]
         self.params[i, :] = self.params[i - offset, :]
@@ -255,10 +255,10 @@ class MetropolisHastings(object):
     def _compute_accept_prob(self, state, model):
         """Compute acceptance probability."""
         offset = 1
-        # if self.use_hessian_information:
-        #     if self.settings['hessianEstimate'] is not 'Kalman':
-        #         if self.current_iter > self.settings['memoryLength']:
-        #             offset = self.settings['memoryLength']
+        if self.use_hessian_information:
+            if self.settings['hessian_estimate'] is 'quasi_newton':
+                if self.current_iter > self.settings['qn_memory_length']:
+                    offset = self.settings['qn_memory_length']
 
         cur_free_param = self.free_params[self.current_iter - offset, :]
         cur_param = self.params[self.current_iter - offset, :]
