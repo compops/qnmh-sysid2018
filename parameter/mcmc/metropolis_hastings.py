@@ -44,6 +44,7 @@ class MetropolisHastings(object):
                          'qn_initial_hessian': 'fixed',
                          'qn_strategy': None,
                          'qn_bfgs_curvature_cond': 'ignore',
+                         'qn_sr1_safe_parameterisation': False,
                          'qn_initial_hessian_scaling': 0.10,
                          'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
                          'qn_only_accepted_info': True
@@ -74,7 +75,7 @@ class MetropolisHastings(object):
             elif self.settings['qn_strategy'] is 'bfgs':
                 print("Hessian estimation using BFGS update.")
             else:
-                raise ValueError("Unknown quasi-Newron strategy selected...")
+                raise ValueError("Unknown quasi-Newton strategy selected...")
         else:
             raise ValueError("Unknown MH variant selected...")
 
@@ -229,8 +230,16 @@ class MetropolisHastings(object):
         if no_param == 1:
             perturbation = np.sqrt(np.abs(curr_hess)) * np.random.normal()
         else:
-            perturbation = np.random.multivariate_normal(np.zeros(no_param),
-                                                         curr_hess)
+            try:
+                perturbation = np.random.multivariate_normal(np.zeros(no_param),
+                                                             curr_hess)
+            except RuntimeWarning:
+                print("Warning raised in np.random.multivariate_normal " +
+                      "so using Cholesky to generate random variables.")
+                curr_hess_root = np.linalg.cholesky(curr_hess)
+                perturbation = np.random.multivariate_normal(np.zeros(no_param),
+                                                             np.eye(no_param))
+                perturbation = np.matmul(curr_hess_root, perturbation)
 
         param_change = cur_nat_grad + perturbation
         prop_params = cur_params + param_change

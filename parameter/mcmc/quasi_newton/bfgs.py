@@ -1,8 +1,9 @@
 """Implements BFGS update for Hessian estimation."""
 import numpy as np
 
-def bfgs_estimate(estimate, mcmc, param_diff, grad_diff):
+def bfgs_estimate(initial_hessian, mcmc, param_diff, grad_diff):
     """Implements BFGS update for Hessian estimation."""
+    estimate = initial_hessian
     curv_cond = mcmc.settings['qn_bfgs_curvature_cond']
     identity_matrix = np.diag(np.ones(mcmc.model.no_params_to_estimate))
     no_samples = 0

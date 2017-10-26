@@ -72,8 +72,8 @@ def _correct_hessian(estimate, mcmc):
             if mcmc.current_iter > mcmc.settings['no_burnin_iters']:
                 if mcmc.settings['hessian_correction_verbose']:
                     print("Iteration: " + str(mcmc.current_iter) +
-                          ", corrected Hessian by replacing with estimate from " +
-                          "latter half of burn-in.")
+                          ", corrected Hessian by replacing with estimate " +
+                          "from latter half of burn-in.")
 
                 if not hasattr(mcmc, 'emp_hessian'):
                     idx = range(int(0.5 * mcmc.settings['no_burnin_iters']),
@@ -94,8 +94,10 @@ def _correct_hessian(estimate, mcmc):
             if mcmc.settings['hessian_correction_verbose']:
                 print("Iteration: " + str(mcmc.current_iter) +
                       ", corrected Hessian by adding diagonal matrix " +
-                      " with elements: " + str(-2.0 * min_eigval))
-            return estimate - 2.0 * min_eigval * np.eye(estimate.shape[0])
+                      "with elements: " + str(-2.0 * min_eigval))
+            corrected_estimate = estimate
+            corrected_estimate -= 2.0 * min_eigval * np.eye(estimate.shape[0])
+            return corrected_estimate
 
         # Flip the negative eigenvalues
         elif strategy is 'flip':
@@ -105,7 +107,9 @@ def _correct_hessian(estimate, mcmc):
                       "to positive.")
             evd = np.linalg.eig(estimate)
             ev_matrix = np.diag(np.abs(evd[0]))
-            return np.dot(np.dot(evd[1], ev_matrix), evd[1])
+            estimate = np.matmul(evd[1], ev_matrix)
+            estimate = np.matmul(estimate, evd[1])
+            return estimate
         else:
             raise ValueError("Unknown Hessian correction strategy...")
     else:

@@ -50,13 +50,21 @@ def quasi_newton(mcmc, prop_gradient):
         param_diff[i, :] = parameters[i+1, :] - parameters[i, :]
         grad_diff[i, :] = gradients[i+1, :] - gradients[i, :]
 
-    initial_hessian = _init_hessian_estimate(mcmc, prop_gradient,
-                                             param_diff, grad_diff)
+    initial_hessian = _init_hessian_estimate(mcmc=mcmc,
+                                             prop_gradient=prop_gradient,
+                                             param_diff=param_diff,
+                                             grad_diff=grad_diff)
 
     if strategy is 'bfgs':
-        return bfgs_estimate(initial_hessian, mcmc, param_diff, grad_diff)
+        return bfgs_estimate(initial_hessian=initial_hessian,
+                             mcmc=mcmc,
+                             param_diff=param_diff,
+                             grad_diff=grad_diff)
     elif strategy is 'sr1':
-        return sr1_estimate(initial_hessian, param_diff, grad_diff)
+        return sr1_estimate(initial_hessian=initial_hessian,
+                            mcmc=mcmc,
+                            param_diff=param_diff,
+                            grad_diff=grad_diff)
 
 
     else:
