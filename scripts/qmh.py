@@ -29,7 +29,7 @@ def run(new_settings=None, sim_name='test', sim_desc='...'):
     # Metropolis-Hastings
     mh_settings = {'no_iters': 1000,
                    'no_burnin_iters': 250,
-                   'step_size': 0.5,
+                   'step_size': 1.0,
                    'base_hessian': np.eye(3) * 0.05**2,
                    'initial_params': (0.2, 0.5, 1.0),
                    'verbose': False,
@@ -39,7 +39,8 @@ def run(new_settings=None, sim_name='test', sim_desc='...'):
                    'qn_strategy': 'bfgs',
                    'qn_bfgs_curvature_cond': 'damped', # ignore, enforce
                    'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
-                   'qn_only_accepted_info': True
+                   'qn_only_accepted_info': True,
+                   'hessian_correction_verbose': True
                    }
 
     if new_settings:

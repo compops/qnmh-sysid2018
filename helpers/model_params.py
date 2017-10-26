@@ -52,3 +52,10 @@ def get_params(model):
         for param in model.params_to_estimate:
             parameters.append(model.params[param])
     return np.array(parameters)
+
+def get_all_params(model):
+    """Returns the restricted values of the model parameters as a vector."""
+    parameters = []
+    for param in model.params:
+        parameters.append(model.params[param])
+    return np.array(parameters)

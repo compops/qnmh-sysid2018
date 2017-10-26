@@ -28,7 +28,7 @@ def logpdf(parm, mean, stdev):
         A scalar with the value of the log-pdf.
     """
     quad_term = -0.5 / (stdev**2) * (parm - mean)**2
-    return -0.5 * np.log(2 * np.pi * stdev**2) - quad_term
+    return -0.5 * np.log(2 * np.pi * stdev**2) + quad_term
 
 def logpdf_gradient(parm, mean, stdev):
     """Computes the gradient of the log-pdf of the Gaussian distribution.

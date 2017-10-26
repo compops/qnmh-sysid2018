@@ -5,7 +5,7 @@ from scipy.stats import norm
 from helpers.data_generation import generate_data, import_data
 from helpers.inference_model import create_inference_model, fix_true_params
 from helpers.model_params import store_free_params, store_params
-from helpers.model_params import get_free_params, get_params
+from helpers.model_params import get_free_params, get_params, get_all_params
 from helpers.distributions import normal
 from helpers.distributions import gamma
 
@@ -64,9 +64,10 @@ class SystemModel(object):
         noise = noise_stdev * np.random.randn(1, len(current_state))
         return mean + noise
 
-    def evaluate_obs(self, current_state, current_obs):
+    def evaluate_obs(self, current_state, time_step):
         """Evaluates the probability of current_state and current_obs
            under the observation model."""
+        current_obs = self.obs[time_step]
         mean = current_state
         stdev = self.params['sigma_e']
         return norm.logpdf(current_obs, mean, stdev)
@@ -138,10 +139,12 @@ class SystemModel(object):
 
         return hessians
 
-    def log_joint_gradient(self, next_state, current_state, current_obs):
+    def log_joint_gradient(self, next_state, current_state, time_index):
         """Returns the gradient of the logarithm of the joint distributions of
         states and observations as a dictionary with a member for each
         parameter."""
+        current_obs = self.obs[time_index]
+
         state_quad_term = current_state - self.params['mu']
         state_quad_term *= self.params['phi']
         state_quad_term += next_state - self.params['mu']
@@ -200,5 +203,6 @@ class SystemModel(object):
     store_params = store_params
     get_free_params = get_free_params
     get_params = get_params
+    get_all_params = get_all_params
     create_inference_model = create_inference_model
     fix_true_params = fix_true_params

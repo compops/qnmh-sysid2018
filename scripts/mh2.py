@@ -33,7 +33,8 @@ def run(new_settings=None, sim_name='test', sim_desc='...'):
                    'base_hessian': np.eye(3) * 0.05**2,
                    'initial_params': (0.2, 0.5, 1.0),
                    'verbose': False,
-                   'hessian_estimate': 'kalman'
+                   'hessian_estimate': 'kalman',
+                   'hessian_correction_verbose': True
                    }
 
     if new_settings:

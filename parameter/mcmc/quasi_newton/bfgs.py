@@ -19,14 +19,16 @@ def bfgs_estimate(estimate, mcmc, param_diff, grad_diff):
                 violate_curv_cond += 1
 
         elif curv_cond is 'damped':
+            neg_inverse_estimate = -np.linalg.inv(estimate)
             term1 = np.dot(param_diff[i], grad_diff[i])
-            term2 = np.dot(param_diff[i], np.linalg.inv(estimate))
+            term2 = np.dot(param_diff[i], neg_inverse_estimate)
             term2 = np.dot(term2, param_diff[i])
             if term1 > 0.2 * term2:
                 theta = 1.0
             else:
                 theta = 0.8 * term2 / (term2 - term1)
-            grad_guess = np.dot(np.linalg.inv(estimate), param_diff[i])
+            print("theta in damped BFGS: " + str(theta) + ".")
+            grad_guess = np.dot(neg_inverse_estimate, param_diff[i])
             new_grad_diff = theta * grad_diff[i] + (1.0 - theta) * grad_guess
             do_update = True
 
@@ -48,7 +50,6 @@ def bfgs_estimate(estimate, mcmc, param_diff, grad_diff):
             tmp_term1 = np.matmul(term1, estimate)
             estimate = np.matmul(tmp_term1, term2) + term3
 
-    #print("BFGS, noMaxSamples: " + str(len(param_diff)) + ", no_samples: "
-    #       + str(no_samples) + " and violate_curv_cond: "
-    #       + str(violate_curv_cond) + ".")
-    return -estimate, no_samples
+        if curv_cond is 'enforce' or curv_cond is 'ignore':
+            estimate = -estimate
+    return estimate, no_samples
