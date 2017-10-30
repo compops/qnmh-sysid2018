@@ -11,11 +11,13 @@ mh_settings = {'no_iters': 5000,
                'qn_initial_hessian': 'scaled_gradient',
                'qn_initial_hessian_scaling': 0.01,
                'verbose': False,
-               'trust_region_size': 0.4
+               'trust_region_size': 0.4,
+               'qn_only_accepted_info': True,
+               'qn_memory_length': 20
                }
 
 sim_name = 'mh2'
-#mh.run(new_settings=mh_settings, sim_name=sim_name)
+mh.run(new_settings=mh_settings, sim_name=sim_name)
 
 mh_settings.update({'qn_strategy': 'bfgs'})
 sim_name = 'qmh_bfgs'

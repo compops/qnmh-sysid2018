@@ -16,6 +16,12 @@ def import_data(model, file_name):
         states = data_frame['state'].values[0:(model.no_obs + 1)]
         states = np.array(states, copy=True).reshape((model.no_obs + 1, 1))
         model.states = states
+
+    if 'input' in list(data_frame):
+        inputs = data_frame['input'].values[0:(model.no_obs + 1)]
+        inputs = np.array(obs, copy=True).reshape((model.no_obs + 1, 1))
+        model.inputs = inputs
+
     else:
         model.states = None
 
@@ -29,8 +35,8 @@ def generate_data(model, file_name=None):
     model.states[0] = model.initial_state
 
     for i in range(1, model.no_obs + 1):
-        model.states[i] = model.generate_state(model.states[i-1])
-        model.obs[i] = model.generate_obs(model.states[i])
+        model.states[i] = model.generate_state(model.states[i-1], i)
+        model.obs[i] = model.generate_obs(model.states[i], i)
 
     if file_name:
         data_frame = pd.DataFrame(data=np.hstack((model.states, model.obs)),

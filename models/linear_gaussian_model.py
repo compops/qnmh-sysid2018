@@ -25,13 +25,15 @@ class SystemModel(object):
                              'sigma_v': (gamma, 2.0, 2.0),
                              'sigma_e': (gamma, 2.0, 2.0)
                             }
-        self.intial_state = 0.0
-        self.no_obs = 500
+        self.intial_state = []
+        self.no_obs = []
         self.states = []
+        self.inputs = []
         self.obs = []
         self.params_to_estimate_idx = []
         self.no_params_to_estimate = 0
         self.params_to_estimate = []
+        self.true_params = []
 
     def generate_initial_state(self, no_samples):
         """Generates no_samples from the initial state distribution."""
@@ -40,35 +42,35 @@ class SystemModel(object):
         noise_stdev /= np.sqrt(1.0 - self.params['phi']**2)
         return mean + noise_stdev * np.random.normal(size=(1, no_samples))
 
-    def generate_state(self, current_state):
-        """Generates a new state by the state dynamics given current_state."""
+    def generate_state(self, cur_state, time_step):
+        """Generates a new state by the state dynamics given cur_state."""
         mean = self.params['mu']
-        mean += self.params['phi'] * (current_state - self.params['mu'])
+        mean += self.params['phi'] * (cur_state - self.params['mu'])
         noise_stdev = self.params['sigma_v']
-        noise = noise_stdev * np.random.randn(1, len(current_state))
+        noise = noise_stdev * np.random.randn(1, len(cur_state))
         return mean + noise
 
-    def evaluate_state(self, next_state, current_state):
-        """Evaluates the probability of current_state and next_state under
+    def evaluate_state(self, next_state, cur_state, time_step):
+        """Evaluates the probability of cur_state and next_state under
            the state dynamics model."""
         mean = self.params['mu']
-        mean += self.params['phi'] * (current_state - self.params['mu'])
+        mean += self.params['phi'] * (cur_state - self.params['mu'])
         stdev = self.params['sigma_v']
         return norm.logpdf(next_state, mean, stdev)
 
-    def generate_obs(self, current_state):
+    def generate_obs(self, cur_state, time_step):
         """Generates a new observation by the observation dynamics
-           given current_state."""
-        mean = current_state
+           given cur_state."""
+        mean = cur_state
         noise_stdev = self.params['sigma_e']
-        noise = noise_stdev * np.random.randn(1, len(current_state))
+        noise = noise_stdev * np.random.randn(1, len(cur_state))
         return mean + noise
 
-    def evaluate_obs(self, current_state, time_step):
-        """Evaluates the probability of current_state and current_obs
+    def evaluate_obs(self, cur_state, time_step):
+        """Evaluates the probability of cur_state and current_obs
            under the observation model."""
         current_obs = self.obs[time_step]
-        mean = current_state
+        mean = cur_state
         stdev = self.params['sigma_e']
         return norm.logpdf(current_obs, mean, stdev)
 
@@ -139,22 +141,22 @@ class SystemModel(object):
 
         return hessians
 
-    def log_joint_gradient(self, next_state, current_state, time_index):
+    def log_joint_gradient(self, next_state, cur_state, time_index):
         """Returns the gradient of the logarithm of the joint distributions of
         states and observations as a dictionary with a member for each
         parameter."""
         current_obs = self.obs[time_index]
 
-        state_quad_term = current_state - self.params['mu']
-        state_quad_term *= self.params['phi']
-        state_quad_term += next_state - self.params['mu']
-        obs_quad_term = current_obs - current_state
+        state_quad_term = next_state - self.params['mu']
+        state_quad_term -= self.params['phi'] * (cur_state - self.params['mu'])
+        obs_quad_term = current_obs - cur_state
+
         q_matrix = self.params['sigma_v']**(-2)
         r_matrix = self.params['sigma_e']**(-2)
 
         gradient_mu = q_matrix * state_quad_term * (1.0 - self.params['phi'])
         gradient_phi = q_matrix * state_quad_term
-        gradient_phi *= (current_state - self.params['mu'])
+        gradient_phi *= (cur_state - self.params['mu'])
         gradient_phi *= (1.0 - self.params['phi']**2)
         gradient_sigmav = q_matrix * state_quad_term**2 - 1.0
         gradient_sigmae = r_matrix * obs_quad_term**2 - 1.0

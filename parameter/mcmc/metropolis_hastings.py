@@ -45,6 +45,7 @@ class MetropolisHastings(object):
                          'qn_strategy': None,
                          'qn_bfgs_curvature_cond': 'ignore',
                          'qn_sr1_safe_parameterisation': False,
+                         'qn_sr1_skip_limit': 1e-8,
                          'qn_initial_hessian_scaling': 0.10,
                          'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
                          'qn_only_accepted_info': True

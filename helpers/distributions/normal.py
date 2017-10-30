@@ -41,7 +41,7 @@ def logpdf_gradient(parm, mean, stdev):
     Returns:
         A scalar with the value of the gradient of the log-pdf.
     """
-    return (mean - parm) / stdev**2
+    return -(mean - parm) / stdev**2
 
 def logpdf_hessian(parm, mean, stdev):
     """Computes the Hessian of the log-pdf of the Gaussian distribution.

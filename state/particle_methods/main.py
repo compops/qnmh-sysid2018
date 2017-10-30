@@ -1,7 +1,9 @@
 """Particle methods."""
 import numpy as np
-from scipy.stats import norm
-from state.particle_methods.linear_gaussian_model import bpf_lgss, flps_lgss
+from state.particle_methods.linear_gaussian_model import bpf_lgss
+from state.particle_methods.linear_gaussian_model import flps_lgss
+from state.particle_methods.filters import bpf
+from state.particle_methods.smoothers import flps
 
 class ParticleMethods(object):
     """Particle methods."""
@@ -27,15 +29,33 @@ class ParticleMethods(object):
         if new_settings:
             self.settings.update(new_settings)
 
-    def filter_linear_gaussian_model(self, model):
+    def filter(self, model):
+        """Bootstrap particle filter"""
+        self.name = "Bootstrap particle filter"
+        output = bpf(self, model=model)
+
+        self.filt_state_est = output['filt_state_est']
+        self.log_like = output['log_like']
+        self.x_traj = output['particle_traj']
+        self.particles = output['particles']
+        self.weights = output['weights']
+        self.ancestors = output['ancestors']
+        self.ancestors_resampled = output['ancestors_resampled']
+
+    def smoother(self, model):
+        """Fixed-lag particle smoother"""
+        self.name = "Bootstrap particle filter"
+        self.filter(model=model)
+        output = flps(self, model=model)
+        self.smo_state_est = output['smo_state_est']
+        self.estimate_gradient(model, output)
+
+    def bpf_lgss_cython(self, model):
         """Bootstrap particle filter for linear Gaussian model."""
         self.name = "Bootstrap particle filter"
-        output = bpf_lgss(observations=model.obs,
+        output = bpf_lgss(np.array(model.obs, dtype=np.float64),
                           params=model.get_all_params(),
-                          no_particles=self.settings['no_particles'],
-                          resampling_method=self.settings['resampling_method'],
-                          generate_initial_state=self.settings['generate_initial_state'],
-                          initial_state=self.settings['initial_state']
+                          no_particles=self.settings['no_particles']
                          )
 
         self.filt_state_est = output['filt_state_est']
@@ -46,24 +66,24 @@ class ParticleMethods(object):
         self.ancestors = output['ancestors']
         self.ancestors_resampled = output['ancestors_resampled']
 
-    def smoother_linear_gaussian_model(self, model):
+    def flps_lgss_cython(self, model):
         """Fixed-lag particle smoother for linear Gaussian model."""
         self.name = "Fixed-lag particle smoother"
-        self.filter_linear_gaussian_model(model)
-
-        output = flps_lgss(observations=model.obs,
+        self.bpf_lgss_cython(model)
+        output = flps_lgss(observations=np.array(model.obs, dtype=np.float64),
                            params=model.get_all_params(),
                            no_particles=self.settings['no_particles'],
                            fixed_lag=self.settings['fixed_lag'],
                            ancestors=self.ancestors,
                            particles=self.particles,
-                           weights=self.weights,
-                           estimate_gradient=self.settings['estimate_gradient']
+                           weights=self.weights
                           )
 
         self.smo_state_est = output['smo_state_est']
-        gradient_estimate = output['log_joint_gradient_estimate']
+        self.estimate_gradient(model, output)
 
+    def estimate_gradient(self, model, output):
+        gradient_estimate = output['log_joint_gradient_estimate']
         gradient = {}
         gradient_internal = []
         i = 0

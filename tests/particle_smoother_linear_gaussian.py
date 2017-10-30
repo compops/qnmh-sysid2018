@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pylab as plt
+import time
 
 from models.linear_gaussian_model import SystemModel
 from state.particle_methods.main import ParticleMethods
 
-def run():
+def run(cython_code=False):
     # System model
     sys_model = SystemModel()
     sys_model.params['mu'] = 0.20
@@ -23,14 +24,21 @@ def run():
 
     # Kalman filter and smoother
     particle_settings = {'resampling_method': 'systematic',
-                         'no_particles': 5000,
+                         'no_particles': 1000,
                          'estimate_gradient': True,
-                         'fixed_lag': 15,
+                         'fixed_lag': 10,
                          'generate_initial_state': True,
                          'initial_state': 0.0
                         }
     pf = ParticleMethods(particle_settings)
-    pf.smoother_linear_gaussian_model(sys_model)
+
+    start_time = time.time()
+    if cython_code:
+        pf.flps_lgss_cython(sys_model)
+    else:
+        pf.smoother(sys_model)
+    print("Run time of smoother:.")
+    print("--- %s seconds ---" % (time.time() - start_time))
 
     plt.subplot(311)
     plt.plot(np.arange(sys_model.no_obs+1), sys_model.states)
@@ -61,7 +69,10 @@ def run():
     for i in range(len(grid_mu)):
         sys_model.store_params(grid_mu[i])
         log_like_mu[i] = pf.log_like
-        pf.smoother_linear_gaussian_model(sys_model)
+        if cython_code:
+            pf.flps_lgss_cython(sys_model)
+        else:
+            pf.smoother(sys_model)
         gradient_mu[i] = pf.gradient_internal / (1.0 - sys_model.params['phi'])
 
     # Phi
@@ -73,10 +84,12 @@ def run():
 
     for i in range(len(grid_phi)):
         sys_model.store_params(grid_phi[i])
-        pf.smoother_linear_gaussian_model(sys_model)
+        if cython_code:
+            pf.flps_lgss_cython(sys_model)
+        else:
+            pf.smoother(sys_model)
         log_like_phi[i] = pf.log_like
-        gradient_phi[i] = pf.gradient_internal
-        gradient_phi[i] /= (1.0 - sys_model.params['phi']**2)
+        gradient_phi[i] = pf.gradient_internal / (1.0 - grid_phi[i]**2)
 
     # Sigma_v
     sys_model.create_inference_model(params_to_estimate = ('sigma_v'))
@@ -87,7 +100,10 @@ def run():
 
     for i in range(len(grid_sigmav)):
         sys_model.store_params(grid_sigmav[i])
-        pf.smoother_linear_gaussian_model(sys_model)
+        if cython_code:
+            pf.flps_lgss_cython(sys_model)
+        else:
+            pf.smoother(sys_model)
         log_like_sigmav[i] = pf.log_like
         gradient_sigmav[i] = pf.gradient_internal / grid_sigmav[i]
 
