@@ -134,7 +134,6 @@ class MetropolisHastings(object):
             state_estimator.settings['estimate_hessian'] = True
 
         no_iters = self.settings['no_iters']
-        no_burnin_iters = self.settings['no_burnin_iters']
         self.current_iter = 0
 
         self._initialise_params(state_estimator, self.model)
@@ -206,7 +205,7 @@ class MetropolisHastings(object):
 
             state.smoother(model)
             self.log_like[0] = state.log_like
-            self.states[0, :] = state.filt_state_est
+            self.states[0, :] = state.filt_state_est.reshape(model.no_obs+1)
 
             self.gradient[0, :] = get_gradient(self, state)
             self.hess[0, :, :] = get_hessian(self, state, self.gradient[0, :])
@@ -279,7 +278,7 @@ class MetropolisHastings(object):
 
             state.smoother(model)
             prop_log_like = state.log_like
-            prop_states = state.filt_state_est
+            prop_states = state.filt_state_est.reshape(model.no_obs+1)
 
             prop_grad = get_gradient(self, state)
             prop_hess = get_hessian(self, state, prop_grad)
@@ -312,7 +311,8 @@ class MetropolisHastings(object):
                     max_param_diff = np.max(np.abs(max_param_diff))
                     if max_param_diff > self.settings['trust_region_size']:
                         accept_prob = 0.0
-                        print("Rejected as parameters violate trust region.")
+                        print("Rejected as parameters violate trust region."
+                              + " max_param_diff: " + str(max_param_diff) + ".")
             else:
                 print("iteration: " + str(self.current_iter) +
                       ", estimate of inverse Hessian is not PSD or is" +

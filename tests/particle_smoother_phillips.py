@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pylab as plt
-import time
 
 from models.phillips_curve_model import SystemModel
 from state.particle_methods.main import ParticleMethods
@@ -19,9 +18,9 @@ def run(cython_code=False):
 
     # Inference model
     sys_model.fix_true_params()
-    sys_model.create_inference_model(params_to_estimate = ('alpha', 'phi', 'beta', 'sigma_v'))
+    sys_model.create_inference_model(params_to_estimate = ('alpha', 'phi', 'beta', 'sigma_e'))
 
-    # Kalman filter and smoother
+    # Particle filter and smoother
     particle_settings = {'resampling_method': 'systematic',
                          'no_particles': 1000,
                          'estimate_gradient': True,
