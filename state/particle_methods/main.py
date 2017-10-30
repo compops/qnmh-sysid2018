@@ -16,6 +16,7 @@ class ParticleMethods(object):
         self.settings.update({'resampling_method': 'systematic'})
         self.settings.update({'no_particles': 1000})
         self.settings.update({'estimate_gradient': False})
+        self.settings.update({'estimate_hessian_segalweinstein': False})
         self.settings.update({'fixed_lag': 10})
 
         self.log_like = []
@@ -25,6 +26,7 @@ class ParticleMethods(object):
 
         self.gradient = []
         self.gradient_internal = []
+        self.hessian_internal = []
 
         if new_settings:
             self.settings.update(new_settings)
@@ -48,7 +50,7 @@ class ParticleMethods(object):
         self.filter(model=model)
         output = flps(self, model=model)
         self.smo_state_est = output['smo_state_est']
-        self.estimate_gradient(model, output)
+        self.estimate_gradient_and_hessian(model, output)
 
     def bpf_lgss_cython(self, model):
         """Bootstrap particle filter for linear Gaussian model."""
@@ -80,10 +82,14 @@ class ParticleMethods(object):
                           )
 
         self.smo_state_est = output['smo_state_est']
-        self.estimate_gradient(model, output)
+        self.estimate_gradient_and_hessian(model, output)
 
-    def estimate_gradient(self, model, output):
+    def estimate_gradient_and_hessian(self, model, output):
+        """Inserts gradients and Hessian of the log-priors into the estimates
+        of the gradient and Hessian of the log-likelihood."""
+
         gradient_estimate = output['log_joint_gradient_estimate']
+        hessian = output['log_joint_hessian_estimate']
         gradient = {}
         gradient_internal = []
         i = 0
@@ -99,8 +105,20 @@ class ParticleMethods(object):
             i = 0
             for first_param in log_prior_gradient.keys():
                 gradient_estimate[i] += log_prior_gradient[first_param]
+                if self.settings['estimate_hessian_segalweinstein']:
+                    log_prior_hessian = model.log_prior_hessian()
+                    j = 0
+                    for second_param in log_prior_gradient.keys():
+                        hessian[i, j] -= log_prior_hessian[first_param]
+                        hessian[i, j] -= log_prior_hessian[second_param]
+                        j += 1
                 i += 1
 
         if self.settings['estimate_gradient']:
             self.gradient_internal = np.array(gradient_internal)
             self.gradient = gradient
+
+        if self.settings['estimate_hessian_segalweinstein']:
+            idx = model.params_to_estimate_idx
+            self.hessian_internal = np.array(hessian[np.ix_(idx, idx)])
+

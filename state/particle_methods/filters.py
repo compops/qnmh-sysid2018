@@ -45,7 +45,6 @@ def bpf(particle_method, model):
         # Propagate particles
         particles[:, i] = model.generate_state(particles[new_ancestors, i-1], i)
 
-
         # Weight particles
         unnormalised_weights = model.evaluate_obs(particles[:, i], i)
 

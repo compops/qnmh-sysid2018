@@ -18,6 +18,7 @@ def flps(particle_method, model):
     smo_state_est = np.zeros((no_obs, 1))
     smo_gradient_est = np.zeros((no_params, no_obs))
     log_joint_gradient_estimate = np.zeros(no_params)
+    log_joint_hessian_estimate = np.zeros((no_params, no_params))
 
     smo_state_est[0] = particle_method.filt_state_est[0]
     smo_state_est[-1] = particle_method.filt_state_est[-1]
@@ -53,6 +54,13 @@ def flps(particle_method, model):
     if particle_method.settings['estimate_gradient']:
         log_joint_gradient_estimate = np.sum(smo_gradient_est, axis=1)
 
+    if particle_method.settings['estimate_hessian_segalweinstein']:
+        part1 = np.mat(smo_gradient_est).transpose()
+        part1 = np.dot(np.mat(smo_gradient_est), part1)
+        part2 = np.matmul(smo_gradient_est, smo_gradient_est.transpose())
+        log_joint_hessian_estimate = part1 - part2 / no_obs
+
     return {'smo_state_est': smo_state_est,
-            'log_joint_gradient_estimate': log_joint_gradient_estimate
+            'log_joint_gradient_estimate': log_joint_gradient_estimate,
+            'log_joint_hessian_estimate': log_joint_hessian_estimate
            }
