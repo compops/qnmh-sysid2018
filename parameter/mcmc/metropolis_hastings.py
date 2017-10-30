@@ -222,10 +222,16 @@ class MetropolisHastings(object):
 
     def _propose_params(self, model):
         """Parameter proposal."""
+        offset = 1
+        if self.use_hessian_information:
+            if self.settings['hessian_estimate'] is 'quasi_newton':
+                if self.current_iter > self.settings['qn_memory_length']:
+                    offset = self.settings['qn_memory_length']
+
         no_param = self.model.no_params_to_estimate
-        cur_params = self.free_params[self.current_iter - 1, :]
-        cur_nat_grad = self.nat_gradient[self.current_iter - 1, :]
-        curr_hess = self.hess[self.current_iter - 1, :, :]
+        cur_params = self.free_params[self.current_iter - offset, :]
+        cur_nat_grad = self.nat_gradient[self.current_iter - offset, :]
+        curr_hess = self.hess[self.current_iter - offset, :, :]
 
         if no_param == 1:
             perturbation = np.sqrt(np.abs(curr_hess)) * np.random.normal()
