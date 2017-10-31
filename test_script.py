@@ -1,7 +1,6 @@
 #import tests.kalman_smoother as kalman_smoother
 #kalman_smoother.run()
 
-
 #import tests.particle_smoother_linear_gaussian as particle_smoother
 import tests.particle_smoother_phillips as particle_smoother
 particle_smoother.run(cython_code=False)

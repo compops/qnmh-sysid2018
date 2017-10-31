@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.stats import norm
 
-from helpers.data_generation import generate_data, import_data
+from helpers.data_handling import generate_data, import_data
 from helpers.inference_model import create_inference_model, fix_true_params
 from helpers.model_params import store_free_params, store_params
 from helpers.model_params import get_free_params, get_params, get_all_params

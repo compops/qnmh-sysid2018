@@ -55,17 +55,17 @@ class MetropolisHastings(object):
         self.settings.update(settings)
 
         if self_type is 'mh0':
-            self.name = "Zero-order Metropolis-Hastings with Kalman methods"
+            self.name = "Zero-order Metropolis-Hastings"
         elif self_type is 'mh1':
-            self.name = "First-order Metropolis-Hastings with Kalman methods"
+            self.name = "First-order Metropolis-Hastings"
             self.use_gradient_information = True
         elif self_type is 'mh2':
-            self.name = "Second-order Metropolis-Hastings with Kalman methods"
+            self.name = "Second-order Metropolis-Hastings"
             self.use_gradient_information = True
             self.use_hessian_information = True
             self.settings['hessian_estimate'] = 'kalman'
         elif self_type is 'qmh':
-            self.name = "quasi-Newton Metropolis-Hastings with Kalman methods"
+            self.name = "quasi-Newton Metropolis-Hastings"
             self.use_gradient_information = True
             self.use_hessian_information = True
             self.settings['hessian_estimate'] = 'quasi_newton'

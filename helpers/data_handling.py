@@ -1,6 +1,16 @@
 """Helpers for generating and importing data from/to models."""
 import pandas as pd
 import numpy as np
+import quandl
+
+def import_data_quandl(model, handle, start_date, end_date, variable):
+    """Imports financial data from Quandl and computes the log-returns
+    for the use in stochastic volatility models."""
+    data = quandl.get(handle, start_date=start_date, end_date=end_date)
+    log_returns = 100 * np.diff(np.log(data[variable]))
+    model.no_obs = len(log_returns) - 1
+    obs = np.array(log_returns, copy=True).reshape((model.no_obs + 1, 1))
+    model.obs = obs
 
 def import_data(model, file_name):
     """Imports data from file_name to model. Data is given as a csv file with
