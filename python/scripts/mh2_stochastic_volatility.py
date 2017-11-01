@@ -54,4 +54,4 @@ def run(new_mh_settings=None, new_pf_settings=None,
     mh = MetropolisHastings(sys_model, 'mh2', mh_settings)
     mh.run(pf)
 
-    mh.save_to_file(output_path='results', sim_name=sim_name, sim_desc=sim_desc)
+    mh.save_to_file(output_path='../results', sim_name=sim_name, sim_desc=sim_desc)
