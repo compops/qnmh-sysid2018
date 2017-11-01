@@ -24,10 +24,10 @@ pf_settings = {'resampling_method': 'systematic',
                'generate_initial_state': True
               }
 
-# sim_name = 'example3_mh'
-# mh.run(new_mh_settings=mh_settings,
-#        new_pf_settings=pf_settings,
-#        sim_name=sim_name)
+sim_name = 'example3_mh'
+mh.run(new_mh_settings=mh_settings,
+       new_pf_settings=pf_settings,
+       sim_name=sim_name)
 
 # mh_settings.update({'qn_strategy': 'bfgs'})
 # sim_name = 'example3_qmh_bfgs'
@@ -39,12 +39,12 @@ pf_settings = {'resampling_method': 'systematic',
 #         sim_name=sim_name,
 #         sim_desc=sim_desc)
 
-mh_settings.update({'qn_strategy': 'sr1', 'hessian_correction': 'hybrid'})
-sim_name = 'example2_qmh_sr1_hybrid'
-sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
-           'such that the gradient gives a step of 0.01. Non-PD estimates ',
-           'are corrected by replacing with a global estimate.')
-qmh.run(new_mh_settings=mh_settings,
-        new_pf_settings=pf_settings,
-        sim_name=sim_name,
-        sim_desc=sim_desc)
+# mh_settings.update({'qn_strategy': 'sr1', 'hessian_correction': 'replace'})
+# sim_name = 'example3_qmh_sr1_hybrid'
+# sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
+#            'such that the gradient gives a step of 0.01. Non-PD estimates ',
+#            'are corrected by replacing with a global estimate.')
+# qmh.run(new_mh_settings=mh_settings,
+#         new_pf_settings=pf_settings,
+#         sim_name=sim_name,
+#         sim_desc=sim_desc)
