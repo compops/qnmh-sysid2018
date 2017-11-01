@@ -1,10 +1,14 @@
+results/
+*.pickle
+.pickle
+.pdf
+*.pdf
+result/
+
 .vscode/
 .R~
 .m~
 .pyc
-results/
-.pickle
-*.pickle
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
