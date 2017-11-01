@@ -4,6 +4,8 @@ results/
 .pdf
 *.pdf
 result/
+.json
+*.json
 
 .vscode/
 .R~
