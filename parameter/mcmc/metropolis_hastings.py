@@ -313,12 +313,13 @@ class MetropolisHastings(object):
                         print("Rejecting as overflow occured.")
                     accept_prob = 0.0
                 if self.settings['trust_region_size']:
-                    max_param_diff = prop_free_params - cur_free_param
-                    max_param_diff = np.max(np.abs(max_param_diff))
+                    abs_param_diff = np.abs(prop_free_params - cur_free_param)
+                    max_param_diff = np.max(abs_param_diff)
                     if max_param_diff > self.settings['trust_region_size']:
                         accept_prob = 0.0
                         print("Rejected as parameters violate trust region."
                               + " max_param_diff: " + str(max_param_diff) + ".")
+                        print(abs_param_diff)
             else:
                 print("iteration: " + str(self.current_iter) +
                       ", estimate of inverse Hessian is not PSD or is" +

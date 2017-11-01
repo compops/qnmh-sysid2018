@@ -2,7 +2,8 @@
 #kalman_smoother.run()
 
 #import tests.particle_smoother_linear_gaussian as particle_smoother
-import tests.particle_smoother_phillips as particle_smoother
+#import tests.particle_smoother_phillips as particle_smoother
+import tests.particle_smoother_stochastic_volatility as particle_smoother
 particle_smoother.run(cython_code=False)
 
 # import tests.mh_zero_order as mh_zero_order

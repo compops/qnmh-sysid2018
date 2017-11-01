@@ -12,15 +12,15 @@ def run(new_mh_settings=None, new_kf_settings=None, new_pf_settings=None,
     sys_model = SystemModel()
     sys_model.initial_state = 0.0
 
-    # sys_model.import_data_quandl(handle="NASDAQOMX/OMXS30",
-    #                              start_date="2012-01-02",
-    #                              end_date="2014-01-02",
-    #                              variable='Index Value')
+    sys_model.import_data_quandl(handle="NASDAQOMX/OMXS30",
+                                 start_date="2012-01-02",
+                                 end_date="2014-01-02",
+                                 variable='Index Value')
 
-    sys_model.import_data_quandl(handle="BITSTAMP/USD",
-                                 start_date="2014-04-15",
-                                 end_date="2017-10-30",
-                                 variable='VWAP')
+    # sys_model.import_data_quandl(handle="BITSTAMP/USD",
+    #                              start_date="2014-04-15",
+    #                              end_date="2017-10-30",
+    #                              variable='VWAP')
 
     # Inference model
     sys_model.fix_true_params()
@@ -30,7 +30,7 @@ def run(new_mh_settings=None, new_kf_settings=None, new_pf_settings=None,
     particle_settings = {'resampling_method': 'systematic',
                          'no_particles': 1000,
                          'estimate_gradient': True,
-                         'estimate_hessian_segalweinstein': True,
+                         'estimate_hessian_segalweinstein': False,
                          'fixed_lag': 10,
                          'generate_initial_state': True
                         }

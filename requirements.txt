@@ -1,0 +1,8 @@
+quandl
+pymongo
+numpy
+scipy
+pandas
+matplotlib
+palettable
+cython

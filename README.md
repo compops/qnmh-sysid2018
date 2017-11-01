@@ -8,7 +8,7 @@ The tutorial is available as a preprint from http://arxiv.org/pdf/1712****.
 ## Installation
 This code was developed using Anaconda 3 and Python 3.6.3. To satisify these requirements, please download Anaconde from https://www.anaconda.com/ for your OS. In addition, some extra libraries are required. These can be installed using:
 ``` bash
-pip install pymongo
+pip install quandl pymongo numpy scipy pandas matplotlib palettable cython
 ```
 Some of the code is written in Cython and requires compilation before it can be run. Please execute the following from the root directory
 ``` bash
