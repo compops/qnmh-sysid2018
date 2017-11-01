@@ -7,7 +7,11 @@ from state.particle_methods.main import ParticleMethods
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
 
 def run(new_mh_settings=None, new_kf_settings=None, new_pf_settings=None,
-        smoothing_method="kalman", sim_name='test', sim_desc='...'):
+        smoothing_method="kalman", sim_name='test', sim_desc='...',
+        seed_offset=0):
+
+    np.random.seed(87655678 + seed_offset)
+
     # System model
     sys_model = SystemModel()
     sys_model.params['mu'] = 0.20
@@ -17,8 +21,8 @@ def run(new_mh_settings=None, new_kf_settings=None, new_pf_settings=None,
     sys_model.no_obs = 1000
     sys_model.initial_state = 0.0
 
-    #sys_model.generate_data(file_name="data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
-    sys_model.import_data(file_name="data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    #sys_model.generate_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
 
     # Inference model
     sys_model.fix_true_params()

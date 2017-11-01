@@ -7,7 +7,10 @@ from state.particle_methods.main import ParticleMethods
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
 
 def run(new_mh_settings=None, new_pf_settings=None,
-        sim_name='test', sim_desc='...'):
+        sim_name='test', sim_desc='...', seed_offset=0):
+
+    np.random.seed(87655678 + seed_offset)
+
     # System model
     sys_model = SystemModel()
     sys_model.initial_state = 0.0
