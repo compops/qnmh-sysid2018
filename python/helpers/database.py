@@ -3,14 +3,37 @@
 from pymongo import MongoClient
 
 def db_open(db_name, collection_name):
-    """Opens a connection to the database and provides a collection."""
+    """ Open a database connection.
+
+        Opens a connection to the database and provides a collection.
+
+        Args:
+            db_name: name of the database.
+            collection_name: name of the collection.
+
+        Returns:
+           pyMongo handle to the collection.
+
+    """
     client = MongoClient()
     database = client[db_name]
     return database[collection_name]
 
 def db_insert_results(collection, post_name, output=None, data=None,
                       settings=None):
-    """Inserts results as a post into a collection."""
+    """ Inserts results as a post into a collection."
+
+        Args:
+            collection: name of the collection.
+            post_name: name of the post to insert.
+            output: MCMC output (dict) to store.
+            data: data dict to store.
+            settings: settings dict to store.
+
+        Returns:
+           Nothing.
+
+    """
     post = {'name': post_name,
             'output': output,
             'data': data,

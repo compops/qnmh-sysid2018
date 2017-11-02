@@ -6,6 +6,7 @@ from models.stochastic_volatility_model import SystemModel
 from state.particle_methods.main import ParticleMethods
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
 
+
 def run(new_mh_settings=None, new_pf_settings=None,
         sim_name='test', sim_desc='...', seed_offset=0):
 
@@ -27,7 +28,8 @@ def run(new_mh_settings=None, new_pf_settings=None,
 
     # Inference model
     sys_model.fix_true_params()
-    sys_model.create_inference_model(params_to_estimate = ('mu', 'phi', 'sigma_v'))
+    sys_model.create_inference_model(
+        params_to_estimate=('mu', 'phi', 'sigma_v'))
 
    # Particle filter and smoother
     particle_settings = {'resampling_method': 'systematic',
@@ -36,7 +38,7 @@ def run(new_mh_settings=None, new_pf_settings=None,
                          'estimate_hessian_segalweinstein': True,
                          'fixed_lag': 10,
                          'generate_initial_state': True
-                        }
+                         }
     if new_pf_settings:
         particle_settings.update(new_pf_settings)
     pf = ParticleMethods(particle_settings)
@@ -57,4 +59,8 @@ def run(new_mh_settings=None, new_pf_settings=None,
     mh = MetropolisHastings(sys_model, 'mh2', mh_settings)
     mh.run(pf)
 
-    mh.save_to_file(output_path='../results', sim_name=sim_name, sim_desc=sim_desc)
+    mh.save_to_file(output_path='../results',
+                    sim_name=sim_name, sim_desc=sim_desc)
+
+if __name__ == '__main__':
+    run()

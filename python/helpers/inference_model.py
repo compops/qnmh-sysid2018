@@ -3,8 +3,21 @@ import copy
 import numpy as np
 
 def create_inference_model(model, params_to_estimate):
-    """Transoforms a system model into a system model to estimate
-    params_to_estimate in a later stage with an inference algorithm."""
+    """ Transforms a model object into an inference object.
+
+        Adds additional information into a system model to enable it to be
+        used for inference. This information includes the parameters to
+        estimate in the model.
+
+        Args:
+            model: model object
+            params_to_estimate: list of parameters to estimate. For example
+                                params_to_estimate = ('mu', 'phi').
+
+        Returns:
+           Nothing.
+
+    """
 
     model.model_type = "Inference model"
 
@@ -23,4 +36,5 @@ def create_inference_model(model, params_to_estimate):
     model.params_to_estimate_idx = np.asarray(model.params_to_estimate_idx)
 
 def fix_true_params(model):
+    """ Creates a copy of the true parameters into the model object. """
     model.true_params = copy.deepcopy(model.params)

@@ -3,15 +3,16 @@ import numpy as np
 import scipy as sp
 
 def pdf(param, alpha, beta):
-    """Computes the pdf of the Beta distribution.
+    """ Computes the pdf of the Beta distribution.
 
-    Args:
-        param: value to evaluate in
-        alpha: shape parameter
-        beta: shape parameter
+        Args:
+            param: value to evaluate in
+            alpha: shape parameter
+            beta: shape parameter
 
-    Returns:
-        A scalar with the value of the pdf.
+        Returns:
+            A scalar with the value of the pdf.
+
     """
     part1 = sp.special.gamma(alpha + beta)
     part2 = sp.special.gamma(alpha) + sp.special.gamma(beta)
@@ -19,15 +20,16 @@ def pdf(param, alpha, beta):
     return part1 / part2 * part3
 
 def logpdf(param, alpha, beta):
-    """Computes the log-pdf of the Beta distribution.
+    """ Computes the log-pdf of the Beta distribution.
 
-    Args:
-        param: value to evaluate in
-        alpha: shape parameter
-        beta: shape parameter
+        Args:
+            param: value to evaluate in
+            alpha: shape parameter
+            beta: shape parameter
 
-    Returns:
-        A scalar with the value of the log-pdf.
+        Returns:
+            A scalar with the value of the log-pdf.
+
     """
     part1 = sp.special.gammaln(alpha + beta)
     part2 = -np.log(sp.special.gamma(alpha) + sp.special.gamma(beta))
@@ -35,15 +37,16 @@ def logpdf(param, alpha, beta):
     return  part1 + part2 + part3
 
 def logpdf_gradient(param, alpha, beta):
-    """Computes the gradient of the log-pdf of the Beta distribution.
+    """ Computes the gradient of the log-pdf of the Beta distribution.
 
-    Args:
-        param: value to evaluate in
-        alpha: shape parameter
-        beta: shape parameter
+        Args:
+            param: value to evaluate in
+            alpha: shape parameter
+            beta: shape parameter
 
-    Returns:
-        A scalar with the value of the gradient of the log-pdf.
+        Returns:
+            A scalar with the value of the gradient of the log-pdf.
+
     """
     return (alpha - 1.0) / param + (1.0 - beta) / (1.0 - param)
 

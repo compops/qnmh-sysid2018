@@ -4,8 +4,23 @@ import numpy as np
 import quandl
 
 def import_data_quandl(model, handle, start_date, end_date, variable):
-    """Imports financial data from Quandl and computes the log-returns
-    for the use in stochastic volatility models."""
+    """ Imports financial data from Quandl.
+
+        Downloads data from Quandl and computes the log-returns in percent.
+        The result is saved in the model object as the attributes obs and
+        and no_obs.
+
+        Args:
+            model: object to store data in.
+            handle: name at Quandl. (string)
+            start_date: date to start extraction from (YYYY-MM-DD).
+            start_date: date to end extraction at (YYYY-MM-DD).
+            variable: name of column to use for computations.
+
+        Returns:
+           Nothing.
+
+    """
     data = quandl.get(handle, start_date=start_date, end_date=end_date)
     log_returns = 100 * np.diff(np.log(data[variable]))
     model.no_obs = len(log_returns) - 1
@@ -13,8 +28,21 @@ def import_data_quandl(model, handle, start_date, end_date, variable):
     model.obs = obs
 
 def import_data(model, file_name):
-    """Imports data from file_name to model. Data is given as a csv file with
-    headers observation and state. Note that only observation are required."""
+    """ Imports data from file.
+
+        Data is given as a csv file with first line as the labels observation,
+        state and/or input. One data point per line. Only observation is
+        required. The data is stored in the model object under the attributes
+        obs, states, inputs and obs.
+
+        Args:
+            model: object to store data in.
+            file_name: relative search path to csv file. (string)
+
+        Returns:
+           Nothing.
+
+    """
     data_frame = pd.read_csv(file_name)
 
     if 'observation' in list(data_frame):
@@ -38,8 +66,20 @@ def import_data(model, file_name):
     print("Loaded data from file: " + file_name + ".")
 
 def generate_data(model, file_name=None):
-    """Generated data from model and saves the data to a csv file with name
-    file_name if required."""
+    """ Generates data from model and saves it to file.
+
+        Data is generated according to the model object and stored as the
+        attributes obs and state. The data is saved to a csv file if a file
+        name is provided.
+
+        Args:
+            model: object to store data in.
+            file_name: relative path to csv file for saving data. (string)
+
+        Returns:
+           Nothing.
+
+    """
     model.states = np.zeros((model.no_obs + 1, 1))
     model.obs = np.zeros((model.no_obs + 1, 1))
     model.states[0] = model.initial_state

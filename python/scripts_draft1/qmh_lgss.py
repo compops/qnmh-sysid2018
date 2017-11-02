@@ -6,6 +6,7 @@ from state.kalman_methods.main import KalmanMethods
 from state.particle_methods.main import ParticleMethods
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
 
+
 def run(new_mh_settings=None, new_kf_settings=None, new_pf_settings=None,
         smoothing_method="kalman", sim_name='test', sim_desc='...',
         seed_offset=0):
@@ -21,12 +22,14 @@ def run(new_mh_settings=None, new_kf_settings=None, new_pf_settings=None,
     sys_model.no_obs = 1000
     sys_model.initial_state = 0.0
 
-    #sys_model.generate_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
-    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    # sys_model.generate_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    sys_model.import_data(
+        file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
 
     # Inference model
     sys_model.fix_true_params()
-    sys_model.create_inference_model(params_to_estimate = ('mu', 'phi', 'sigma_v'))
+    sys_model.create_inference_model(
+        params_to_estimate=('mu', 'phi', 'sigma_v'))
 
     # Kalman filter and smoother
     kf_settings = {'initial_state': sys_model.initial_state}
@@ -41,7 +44,7 @@ def run(new_mh_settings=None, new_kf_settings=None, new_pf_settings=None,
                          'estimate_hessian_segalweinstein': True,
                          'fixed_lag': 10,
                          'generate_initial_state': True
-                        }
+                         }
     if new_pf_settings:
         particle_settings.update(new_pf_settings)
     pf = ParticleMethods(particle_settings)
@@ -57,7 +60,7 @@ def run(new_mh_settings=None, new_kf_settings=None, new_pf_settings=None,
                    'qn_memory_length': 20,
                    'qn_initial_hessian': 'fixed',
                    'qn_strategy': 'bfgs',
-                   'qn_bfgs_curvature_cond': 'damped', # ignore, enforce
+                   'qn_bfgs_curvature_cond': 'damped',  # ignore, enforce
                    'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
                    'qn_only_accepted_info': True,
                    'hessian_correction_verbose': True
@@ -74,4 +77,9 @@ def run(new_mh_settings=None, new_kf_settings=None, new_pf_settings=None,
     else:
         raise NameError("Unknown smoothing method selected")
 
-    mh.save_to_file(output_path='../results', sim_name=sim_name, sim_desc=sim_desc)
+    mh.save_to_file(output_path='../results',
+                    sim_name=sim_name, sim_desc=sim_desc)
+
+
+if __name__ == '__main__':
+    run()

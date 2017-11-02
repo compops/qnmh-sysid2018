@@ -10,8 +10,31 @@ from helpers.model_params import get_free_params, get_params, get_all_params
 from helpers.distributions import normal
 from helpers.distributions import gamma
 
+
 class SystemModel(object):
-    """System model class for a stochstic volatility model."""
+    """ System model class for a stochastic volatility model.
+
+        Encodes the model with the parameterisation:
+
+        x[t+1] = mu + phi * (x[t] - mu) + sigma[v] * v[t]
+        y[t]   = exp(0.5 * x[t]) * e[t]
+
+        where v[t] is independent and standard Gaussian i.e., N(0, 1).
+        The parameters of the model are (mu, phi, sigma[v]).
+
+        Furthermore, the inference model is reparameterised to enable all
+        parameters to be unrestricted (can assume any real value) in the
+        inference step. Hence, the reparameterised model is given by
+
+        mu = mu
+        phi = tanh(eta)
+        sigma[v] = exp(psi)
+
+        where (eta, psi) now as assume any real value. This results in that
+        this transformation needs to be taken into account when computing
+        gradients as well as in the Jacobian.
+
+    """
 
     def __init__(self):
         self.name = "Stochastic volatility model with three parameters."
@@ -35,14 +58,31 @@ class SystemModel(object):
         self.true_params = []
 
     def generate_initial_state(self, no_samples):
-        """Generates no_samples from the initial state distribution."""
+        """ Generates no_samples from the initial state distribution.
+
+            Args:
+                no_samples: number of samples to generate (integer).
+
+            Returns:
+                An array with no_samples from the initial state distribution.
+
+        """
         mean = self.params['mu']
         noise_stdev = self.params['sigma_v']
         noise_stdev /= np.sqrt(1.0 - self.params['phi']**2)
         return mean + noise_stdev * np.random.normal(size=(1, no_samples))
 
     def generate_state(self, cur_state, time_step):
-        """Generates a new state by the state dynamics given cur_state."""
+        """ Generates a new state by the state dynamics.
+
+            Args:
+                cur_state: the current state (array).
+                time_step: the current time step (integer).
+
+            Returns:
+                An array ofsamples from the next time step.
+
+        """
         mean = self.params['mu']
         mean += self.params['phi'] * (cur_state - self.params['mu'])
         noise_stdev = self.params['sigma_v']
@@ -50,28 +90,59 @@ class SystemModel(object):
         return mean + noise
 
     def evaluate_state(self, next_state, cur_state, time_step):
-        """Evaluates the probability of cur_state and next_state under
-           the state dynamics model."""
+        """ Computes the probability of a state transition.
+
+            Args:
+                next_state: the next state (array)
+                cur_state: the current state (array).
+                time_step: the current time step (integer).
+
+            Returns:
+                An array of transition log-probabilities.
+
+        """
         mean = self.params['mu']
         mean += self.params['phi'] * (cur_state - self.params['mu'])
         stdev = self.params['sigma_v']
         return norm.logpdf(next_state, mean, stdev)
 
     def generate_obs(self, cur_state, time_step):
-        """Generates a new observation by the observation dynamics
-           given cur_state."""
+        """ Generates a new observation by the observation dynamics.
+
+            Args:
+                cur_state: the current state (array).
+                time_step: the current time step (integer).
+
+            Returns:
+                An array of observations.
+
+        """
         volatility = np.exp(0.5 * cur_state)
         return volatility * np.random.randn(1, len(cur_state))
 
     def evaluate_obs(self, cur_state, time_step):
-        """Evaluates the probability of cur_state and current_obs
-           under the observation model."""
+        """ Computes the probability of obtaining an observation.
+
+            Args:
+                cur_state: the current state (array).
+                time_step: the current time step (integer).
+
+            Returns:
+                An array of observation log-probabilities.
+
+        """
         current_obs = self.obs[time_step]
         volatility = np.exp(0.5 * cur_state)
         return norm.logpdf(current_obs, 0.0, volatility)
 
     def check_parameters(self):
-        """"Checks if parameters satisifes hard constraints."""
+        """" Checks if parameters satisfies hard constraints on the parameters.
+
+                Returns:
+                    Boolean to indicate if the current parameters results in
+                    a stable system and obey the constraints on their values.
+
+        """
         if np.abs(self.params['phi']) > 1.0:
             parameters_are_okey = False
         elif self.params['sigma_v'] < 0.0:
@@ -81,14 +152,20 @@ class SystemModel(object):
         return parameters_are_okey
 
     def log_prior(self):
-        """Returns the logarithm of the prior distribution as a dictionary
-        with a member for each parameter and the sum as a float."""
+        """ Returns the logarithm of the prior distribution.
+
+            Returns:
+                First value: a dict with an entry for each parameter.
+                Second value: the sum of the log-prior for all variables.
+
+        """
         prior = {}
         for param in self.params:
             dist = self.params_prior[param][0]
             hyppar1 = self.params_prior[param][1]
             hyppar2 = self.params_prior[param][2]
-            prior.update({param: dist.logpdf(self.params[param], hyppar1, hyppar2)})
+            prior.update(
+                {param: dist.logpdf(self.params[param], hyppar1, hyppar2)})
 
         prior_sum = 0.0
         for param in self.params_to_estimate:
@@ -97,8 +174,12 @@ class SystemModel(object):
         return prior, prior_sum
 
     def log_prior_gradient(self):
-        """Returns the gradient of the logarithm of the prior distributions as
-        a dictionary with a member for each parameter."""
+        """ The gradient of the logarithm of the prior.
+
+            Returns:
+                A dict with an entry for each parameter.
+
+        """
         gradients = {}
         for param in self.params:
             dist = self.params_prior[param][0]
@@ -113,8 +194,12 @@ class SystemModel(object):
         return gradients
 
     def log_prior_hessian(self):
-        """Returns the Hessian of the logarithm of the prior distributions as
-        a dictionary with a member for each parameter."""
+        """ The Hessian of the logarithm of the prior.
+
+            Returns:
+                A dict with an entry for each parameter.
+
+        """
         hessians = {}
         gradients = {}
         for param in self.params:
@@ -137,9 +222,20 @@ class SystemModel(object):
         return hessians
 
     def log_joint_gradient(self, next_state, cur_state, time_index):
-        """Returns the gradient of the logarithm of the joint distributions of
-        states and observations as a dictionary with a member for each
-        parameter."""
+        """ The gradient of the joint distribution of observations and states.
+
+            Computes the gradient of log p(x, y) for use in Fisher's identity
+            to compute the gradient of the log-likelihood.
+
+            Args:
+                next_state: the next state. (array)
+                cur_state: the current state. (array)
+                time_index: the current time index. (integer)
+
+            Returns:
+                A dict with an entry for each parameter.
+
+        """
 
         state_quad_term = next_state - self.params['mu']
         state_quad_term -= self.params['phi'] * (cur_state - self.params['mu'])
@@ -158,21 +254,45 @@ class SystemModel(object):
         return gradient
 
     def transform_params_to_free(self):
-        """Transforms the current parameters to their free parameterisation."""
+        """ Computes and store the values of the reparameterised parameters.
+
+            These transformations are dictated directly from the model. See
+            the docstring for the model class for more information. The
+            values of the reparameterised parameters are computed by applying
+            the transformation to the current standard parameters stored in
+            the model object.
+
+        """
         self.free_params['mu'] = self.params['mu']
         self.free_params['phi'] = np.arctanh(self.params['phi'])
         self.free_params['sigma_v'] = np.log(self.params['sigma_v'])
 
     def transform_params_from_free(self):
-        """Get the model parameters by transforming from their free
-        parameterisation."""
+        """ Computes and store the values of the standard parameters.
+
+             These transformations are dictated directly from the model. See
+             the docstring for the model class for more information. The
+             values of the standard parameters are computed by applying
+             the transformation to the current reparameterised parameters stored
+             in the model object.
+
+        """
         self.params['mu'] = self.free_params['mu']
         self.params['phi'] = np.tanh(self.free_params['phi'])
         self.params['sigma_v'] = np.exp(self.free_params['sigma_v'])
 
     def log_jacobian(self):
-        """Returns the sum of the log-Jacobian for all parameters to be
-        estimated."""
+        """ Computes the sum of the log-Jacobian.
+
+            These Jacobians are dictated by the transformations for the model.
+            See the docstring for the model class for more information.
+
+            Returns:
+                the sum of the logarithm of the Jacobian of the parameter
+                transformation for the parameters under inference as listed
+                in params_to_estimate.
+
+        """
         jacobian = {}
         jacobian.update({'mu': 0.0})
         jacobian.update({'phi': np.log(1.0 - self.params['phi']**2)})
@@ -185,6 +305,7 @@ class SystemModel(object):
             output += jacobian[self.params_to_estimate]
         return output
 
+    # Import helpers to the model object
     generate_data = generate_data
     import_data = import_data
     store_free_params = store_free_params

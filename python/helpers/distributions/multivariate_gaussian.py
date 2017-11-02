@@ -2,15 +2,16 @@
 import numpy as np
 
 def logpdf(parm, mean, cov_matrix):
-    """Computes the log-pdf of the multivariate Gaussian distribution.
+    """ Computes the log-pdf of the multivariate Gaussian distribution.
 
-    Args:
-        parm: value to evaluate in
-        mean: mean vector
-        cov_matrix: covariance matrix
+        Args:
+            parm: value to evaluate in
+            mean: mean vector
+            cov_matrix: covariance matrix
 
-    Returns:
-        A scalar with the value of the pdf.
+        Returns:
+            A scalar with the value of the pdf.
+
     """
     no_dimensions = len(cov_matrix)
 

@@ -4,8 +4,22 @@ import copy
 import numpy as np
 
 def store_free_params(model, new_params):
-    """Stores new unrestricted (reparameterised) values of the parameters
-    to the model object. The restricted parameters are updated accordingly."""
+    """ Stores reparameterised parameters to the model.
+
+        Stores new reparameterised (unrestricted) values of the parameters
+        to the model object. The restricted parameters are updated accordingly.
+        Only the parameters used for inference are required. The remaining
+        parameters are copied from the trueParams attribute.
+
+        Args:
+            model: model object
+            new_params: an array with the new reparameterised parameters. The
+                        order must be as in the list params_to_estimate.
+
+        Returns:
+           Nothing.
+
+    """
     model.params = copy.deepcopy(model.true_params)
     model.transform_params_to_free()
 
@@ -19,8 +33,22 @@ def store_free_params(model, new_params):
     model.transform_params_from_free()
 
 def store_params(model, new_params):
-    """Stores new restricted (original) values of the parameters
-    to the model object. The unrestricted parameters are updated accordingly."""
+    """ Stores (restricted) parameters to the model.
+
+        Stores new values of the parameters to the model object. The
+        reparameterised (unrestricted) parameters are updated accordingly.
+        Only the parameters used for inference are required. The remaining
+        parameters are copied from the trueParams attribute.
+
+        Args:
+            model: model object
+            new_params: an array with the new parameters. The order must be
+                        the same as in the list params_to_estimate.
+
+        Returns:
+           Nothing.
+
+    """
     model.params = copy.deepcopy(model.true_params)
 
     if isinstance(new_params, float) or (isinstance(new_params, np.ndarray) and
@@ -34,7 +62,17 @@ def store_params(model, new_params):
     model.transform_params_to_free()
 
 def get_free_params(model):
-    """Returns the unrestricted values of the model parameters as a vector."""
+    """ Returns the reparameterised parameters under inference in the model.
+
+        Args:
+            model: model object
+
+        Returns:
+           An array with the current reparameterised values for the parameters
+           under inference in the model. The order is the same as in the list
+           params_to_estimate.
+
+    """
     parameters = []
     if isinstance(model.params_to_estimate, str):
         parameters.append(model.free_params[model.params_to_estimate])
@@ -44,7 +82,16 @@ def get_free_params(model):
     return np.array(parameters)
 
 def get_params(model):
-    """Returns the restricted values of the model parameters as a vector."""
+    """ Returns the parameters under inference in the model.
+
+        Args:
+            model: model object
+
+        Returns:
+           An array with the current values for the parameters under inference
+           in the model. The order is the same as in the list params_to_estimate.
+
+    """
     parameters = []
     if isinstance(model.params_to_estimate, str):
         parameters.append(model.params[model.params_to_estimate])
@@ -54,7 +101,15 @@ def get_params(model):
     return np.array(parameters)
 
 def get_all_params(model):
-    """Returns the restricted values of the model parameters as a vector."""
+    """ Returns all the parameters in the model.
+
+        Args:
+            model: model object
+
+        Returns:
+           An array with the current values of all parameters in the model.
+
+    """
     parameters = []
     for param in model.params:
         parameters.append(model.params[param])

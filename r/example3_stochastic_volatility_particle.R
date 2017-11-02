@@ -2,13 +2,13 @@ setwd("~/src/qnmh-sysid2018/r")
 library("jsonlite")
 source("helper_plotting.R")
 
-algorithms <- c("example2_mh2_",
-                "example2_qmh_bfgs_",
-                "example2_qmh_sr1_hyb_")
+algorithms <- c("example3_mh2_") #,
+                #"example3_qmh_bfgs_",
+                #"example3_qmh_sr1_hyb_")
 offset <- c(0)
 noItersToPlot <- 1000
 savePlotToFile <- TRUE
-paramsScale <- c(0.1, 0.6, 0.35, 0.55, 0.9, 1.05)
+paramsScale <- c(-3, 3, 0.5, 1, 0, 1)
 
 for (i in 1:length(algorithms)) {
   for (j in 1:length(offset)) {
