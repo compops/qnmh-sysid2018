@@ -133,9 +133,7 @@ class LinearGaussianModel(BaseModel):
 
         """
         current_obs = self.obs[time_step]
-        mean = cur_state
-        stdev = self.params['sigma_e']
-        return norm.logpdf(current_obs, mean, stdev)
+        return norm.logpdf(current_obs, cur_state, self.params['sigma_e'])
 
     def check_parameters(self):
         """" Checks if parameters satisfies hard constraints on the parameters.

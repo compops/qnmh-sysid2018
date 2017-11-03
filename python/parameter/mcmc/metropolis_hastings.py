@@ -431,8 +431,9 @@ class MetropolisHastings(BaseParameterInference):
                                          log_prop_diff + log_jacob_diff)
                 except:
                     if self.settings['verbose']:
-                        print("Rejecting as overflow occured.")
-                    accept_prob = 0.0
+                        print("Accepted bu overflow occured.")
+                    accept_prob = 1.0
+
                 if self.settings['trust_region_size']:
                     abs_param_diff = np.abs(prop_free_params - cur_free_params)
                     max_param_diff = np.max(abs_param_diff)
@@ -468,6 +469,7 @@ class MetropolisHastings(BaseParameterInference):
                     print("cur_log_like: {:.3f}".format(cur_log_like))
                     print("log_like_diff: {:.3f}".format(log_like_diff))
                     print("")
+                    print("log_prior_diff: {:.3f}".format(log_prior_diff))
                     print("log_prop_diff: {:.3f}".format(log_prop_diff))
                     print("log_jacob_diff: {:.3f}".format(log_jacob_diff))
                     print("")

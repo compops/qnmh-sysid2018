@@ -10,10 +10,11 @@ def run():
     sys_model.params['mu'] = 0.20
     sys_model.params['phi'] = 0.50
     sys_model.params['sigma_v'] = 1.00
-    sys_model.params['sigma_e'] = 0.10
+    sys_model.params['sigma_e'] = 0.40
     sys_model.no_obs = 1000
     sys_model.initial_state = 0.0
-    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    #sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
 
     # Inference model
     sys_model.fix_true_params()

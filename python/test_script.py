@@ -8,8 +8,8 @@
 # pf.run(cython_code=False, save_to_file=True)
 
 import tests.mh_linear_gaussian as mh
-# mh.run(filter_method='kalman', alg_type='mh0', plotting=False)
-mh.run(filter_method='particle', alg_type='mh0', plotting=False)
+mh.run(filter_method='kalman', alg_type='mh0', plotting=False)
+# mh.run(filter_method='particle', alg_type='mh0', plotting=False)
 # mh.run(filter_method='kalman', alg_type='mh1', plotting=False)
 # mh.run(filter_method='particle', alg_type='mh1', plotting=False)
 # mh.run(filter_method='kalman', alg_type='mh2', plotting=False)

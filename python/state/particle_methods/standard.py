@@ -15,7 +15,8 @@ class ParticleMethods(BaseStateInference):
                          'fixed_lag': 0,
                          'initial_state': 0.0,
                          'generate_initial_state': False,
-                         'estimate_gradient': False
+                         'estimate_gradient': False,
+                         'verbose': False
                          }
         if new_settings:
             self.settings.update(new_settings)
@@ -25,6 +26,11 @@ class ParticleMethods(BaseStateInference):
         self.name = "Bootstrap particle filter"
         no_obs = model.no_obs + 1
         no_particles = self.settings['no_particles']
+
+        if self.settings['verbose']:
+            print("")
+            print("Particle filter running with model parameters:")
+            print(["%.3f" % v for v in model.get_all_params()])
 
         # Initalise variables
         ancestors = np.zeros((no_particles, no_obs))
@@ -90,6 +96,9 @@ class ParticleMethods(BaseStateInference):
         self.weights = weights
         self.ancestors = ancestors
         self.ancestors_resamp = ancestors_resamp
+
+        if self.settings['verbose']:
+            print("Log-likelihood estimate is: " + str(self.results['log_like']))
 
     def smoother(self, model):
         """Fixed-lag particle smoother"""

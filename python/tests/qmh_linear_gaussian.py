@@ -9,7 +9,14 @@ from state.kalman_methods.standard import KalmanMethods
 def run(filter_method='kalman', alg_type='bfgs', plotting=True):
     # System model
     sys_model = LinearGaussianModel()
-    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    sys_model.params['mu'] = 0.20
+    sys_model.params['phi'] = 0.50
+    sys_model.params['sigma_v'] = 1.00
+    sys_model.params['sigma_e'] = 0.40
+    sys_model.no_obs = 1000
+    sys_model.initial_state = 0.0
+    #sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
 
     # Inference model
     sys_model.fix_true_params()
@@ -23,12 +30,19 @@ def run(filter_method='kalman', alg_type='bfgs', plotting=True):
     pf.settings.update({'no_particles': 1000, 'fixed_lag': 10})
 
     # Metropolis-Hastings
-    hessian_estimate = np.array([[0.00485467,  0.00062787,  0.0001611 ],
-                                 [0.00062787,  0.00133698,  0.00015099],
-                                 [0.0001611,   0.00015099,  0.0005252 ]])
+    # linear_gaussian_model_T1000_goodSNR
+    # hessian_estimate = np.array([[0.00485467,  0.00062787,  0.0001611 ],
+    #                              [0.00062787,  0.00133698,  0.00015099],
+    #                              [0.0001611,   0.00015099,  0.0005252 ]])
 
-    mh_settings = {'no_iters': 1000,
-                   'no_burnin_iters': 250,
+    # linear_gaussian_model_T1000_midSNR
+    hessian_estimate = np.array([[  3.17466496e-03,  -2.65148861e-05,   5.84256527e-05],
+                                 [ -2.65148861e-05,   1.00771014e-03,  -1.59533168e-04],
+                                 [  5.84256527e-05,  -1.59533168e-04,   7.80308724e-04]])
+
+
+    mh_settings = {'no_iters': 2500,
+                   'no_burnin_iters': 500,
                    'step_size': 0.5,
                    'base_hessian': np.eye(3) * 0.05**2,
                    'initial_params': (0.2, 0.5, 1.0),

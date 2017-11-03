@@ -6,6 +6,8 @@ results/
 result/
 .json
 *.json
+results-test/
+results-tests/
 
 .vscode/
 .R~

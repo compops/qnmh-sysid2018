@@ -43,22 +43,15 @@ def get_nat_gradient(mcmc, gradient, inverse_hessian):
             respect to the model parameters to be estimated.
 
     """
-    gradient_requested = False
-    hessian_corrected = False
-
-    if mcmc.alg_type is 'qmh':
-        if mcmc.current_iter > mcmc.settings['qn_memory_length']:
-            gradient_requested = True
-    else:
-        gradient_requested = True
-
     if mcmc.current_iter in mcmc.iter_hessians_corrected:
         hessian_corrected = True
+    else:
+        hessian_corrected = False
 
     if mcmc.settings['qn_sr1_safe_parameterisation'] and hessian_corrected:
         inverse_hessian = np.linalg.cholesky(inverse_hessian)
 
-    if mcmc.use_grad_info and gradient_requested:
+    if mcmc.use_grad_info:
         step_size = 0.5 * mcmc.settings['step_size']**2
         natural_gradient = np.dot(inverse_hessian, gradient)
         natural_gradient = np.array(step_size * natural_gradient).reshape(-1)
@@ -67,4 +60,5 @@ def get_nat_gradient(mcmc, gradient, inverse_hessian):
 
     if mcmc.settings['verbose']:
         print("Current natural gradient: " + str(["%.3f" % v for v in natural_gradient]))
+
     return np.real(natural_gradient)
