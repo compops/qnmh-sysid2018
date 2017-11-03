@@ -68,5 +68,5 @@ def run(filter_method='kalman', alg_type='bfgs', plotting=True):
         mh.plot()
     else:
         mh.save_to_file(output_path='results',
-                        sim_name='test_linear_gaussian_' + filter_method + '_' + qmh + '_' + alg_type,
+                        sim_name='test_linear_gaussian_' + filter_method + '_' + 'qmh_' + alg_type,
                         sim_desc='...')
