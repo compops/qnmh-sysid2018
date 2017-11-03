@@ -4,8 +4,9 @@ import matplotlib.pylab as plt
 from models.linear_gaussian_model import LinearGaussianModel
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
 from state.particle_methods.standard import ParticleMethods
+from state.kalman_methods.standard import KalmanMethods
 
-def run(alg_type='bfgs', plotting=True):
+def run(filter_method='kalman', alg_type='bfgs', plotting=True):
     # System model
     sys_model = LinearGaussianModel()
     sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
@@ -14,10 +15,12 @@ def run(alg_type='bfgs', plotting=True):
     sys_model.fix_true_params()
     sys_model.create_inference_model(params_to_estimate = ('mu', 'phi', 'sigma_v'))
 
+    # Kalman filter and smoother
+    kf = KalmanMethods()
+
     # Particle filter and smoother
     pf = ParticleMethods()
-    pf.settings.update({'no_particles': 1000,
-                        'fixed_lag': 10})
+    pf.settings.update({'no_particles': 1000, 'fixed_lag': 10})
 
     # Metropolis-Hastings
     hessian_estimate = np.array([[0.00485467,  0.00062787,  0.0001611 ],
@@ -47,16 +50,23 @@ def run(alg_type='bfgs', plotting=True):
     if alg_type is 'bfgs':
         mh_settings.update({'qn_strategy': 'bfgs'})
     elif alg_type is 'sr1':
-        mh_settings.update({'qn_strategy': 'bfgs'})
+        mh_settings.update({'qn_strategy': 'sr1'})
     else:
         raise NameError("Unknown Quasi-Newton method...")
 
     mh = MetropolisHastings(sys_model, 'qmh', mh_settings)
-    mh.run(pf)
+
+    if filter_method is 'kalman':
+        mh.run(kf)
+    elif filter_method is 'particle':
+        mh.settings['step_size'] = 0.5 * mh.settings['step_size']
+        mh.run(pf)
+    else:
+        raise NameError("Unknown filter_method (kalman/particle).")
 
     if plotting:
         mh.plot()
     else:
         mh.save_to_file(output_path='results',
-                        sim_name='test_linear_gaussian_' + qmh + '_' + alg_type,
+                        sim_name='test_linear_gaussian_' + filter_method + '_' + qmh + '_' + alg_type,
                         sim_desc='...')
