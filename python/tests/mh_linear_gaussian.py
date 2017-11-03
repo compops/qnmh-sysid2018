@@ -32,7 +32,7 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
                    'no_burnin_iters': 200,
                    'base_hessian': hessian_estimate,
                    'initial_params': (0.2, 0.5, 1.0),
-                   'verbose': False
+                   'verbose': True
                    }
     mh = MetropolisHastings(sys_model, alg_type, mh_settings)
 
@@ -65,6 +65,6 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
     if plotting:
         mh.plot()
     else:
-        mh.save_to_file(output_path='../results-tests'
+        mh.save_to_file(output_path='../results-tests',
                         sim_name='test_linear_gaussian_' + alg_type + '_' + filter_method,
                         sim_desc='...')
