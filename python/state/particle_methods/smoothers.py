@@ -10,9 +10,9 @@ def flps(particle_method, model):
     no_particles = particle_method.settings['no_particles']
     fixed_lag = particle_method.settings['fixed_lag']
 
-    particles = particle_method.particles
-    weights = particle_method.weights
-    ancestors = particle_method.ancestors
+    particles = particle_method.results['particles']
+    weights = particle_method.results['weights']
+    ancestors = particle_method.results['ancestors']
 
     # Initalise variables
     smo_state_est = np.zeros((no_obs, 1))
@@ -20,8 +20,8 @@ def flps(particle_method, model):
     log_joint_gradient_estimate = np.zeros(no_params)
     log_joint_hessian_estimate = np.zeros((no_params, no_params))
 
-    smo_state_est[0] = particle_method.filt_state_est[0]
-    smo_state_est[-1] = particle_method.filt_state_est[-1]
+    smo_state_est[0] = particle_method.results['filt_state_est'][0]
+    smo_state_est[-1] = particle_method.results['filt_state_est'][-1]
 
     # Run the fixed-lag smoother for the rest
     for i in range(0, no_obs-1):
@@ -41,13 +41,13 @@ def flps(particle_method, model):
 
         # Estimate gradient
         if particle_method.settings['estimate_gradient']:
-            gradient_at_i = model.log_joint_gradient(particles[next_ancestor, i+1],
-                                                     particles[curr_ancestor, i],
-                                                     i)
+            sub_grad = model.log_joint_gradient(particles[next_ancestor, i+1],
+                                                particles[curr_ancestor, i],
+                                                i)
 
             j = 0
-            for param in gradient_at_i:
-                weighted_gradients = gradient_at_i[param] * weights[:, lag]
+            for param in sub_grad:
+                weighted_gradients = sub_grad[param] * weights[:, lag]
                 smo_gradient_est[j, i] = np.nansum(weighted_gradients)
                 j += 1
 

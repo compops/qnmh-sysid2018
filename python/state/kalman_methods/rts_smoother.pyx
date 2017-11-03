@@ -17,7 +17,7 @@ def rts_helper(observations, params, pred_state_est, pred_state_cov,
     smo_state_est = np.zeros((no_obs + 1, 1))
     smo_state_cov = np.zeros((no_obs + 1, 1))
     gradient_part = []
-    hessian = []
+    log_joint_hessian_estimate = []
 
     # Run the preliminary Kalman filter
     smo_state_est[-1] = filt_state_est[-1]
@@ -72,19 +72,19 @@ def rts_helper(observations, params, pred_state_est, pred_state_cov,
             gradient_part[2, i] = isigmav2 * (term1 + term2 + term3) - 1.0
             gradient_part[3, i] = 0.0
 
-        gradient_sum = np.sum(gradient_part, axis=1)
+        log_joint_gradient_estimate = np.sum(gradient_part, axis=1)
+
 
     if estimate_hessian:
         part1 = np.mat(gradient_part).transpose()
         part1 = np.dot(np.mat(gradient_part), part1)
-        part2 = np.mat(gradient_sum)
-        part2 = np.dot(np.mat(gradient_sum).transpose(), part2)
-        hessian = part1 - part2 / no_obs
+        part2 = np.mat(log_joint_gradient_estimate)
+        part2 = np.dot(np.mat(log_joint_gradient_estimate).transpose(), part2)
+        log_joint_hessian_estimate = part1 - part2 / no_obs
 
     return {
             'smo_state_cov': smo_state_cov,
             'smo_state_est': smo_state_est,
-            'gradient_part': gradient_part,
-            'gradient_sum': gradient_sum,
-            'hessian': hessian
+            'log_joint_gradient_estimate': log_joint_gradient_estimate,
+            'log_joint_hessian_estimate': log_joint_hessian_estimate
            }

@@ -60,9 +60,6 @@ def import_data(model, file_name):
         inputs = np.array(obs, copy=True).reshape((model.no_obs + 1, 1))
         model.inputs = inputs
 
-    else:
-        model.states = None
-
     print("Loaded data from file: " + file_name + ".")
 
 def generate_data(model, file_name=None):

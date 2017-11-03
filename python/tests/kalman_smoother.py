@@ -1,12 +1,12 @@
 import numpy as np
 import matplotlib.pylab as plt
 
-from models.linear_gaussian_model import SystemModel
+from models.linear_gaussian_model import LinearGaussianModel
 from state.kalman_methods.main import KalmanMethods
 
 def run():
     # System model
-    sys_model = SystemModel()
+    sys_model = LinearGaussianModel()
     sys_model.params['mu'] = 0.20
     sys_model.params['phi'] = 0.50
     sys_model.params['sigma_v'] = 1.00
@@ -15,31 +15,34 @@ def run():
     sys_model.initial_state = 0.0
 
     #sys_model.generate_data(file_name="data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
-    sys_model.import_data(file_name="data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
 
     # Inference model
     sys_model.fix_true_params()
     sys_model.create_inference_model(params_to_estimate = ('mu', 'phi', 'sigma_v'))
 
+    print(sys_model)
+
     # Kalman filter and smoother
     kalman_settings = {'initial_state': sys_model.initial_state,
-                    'initial_cov': 1e-5,
-                    'estimate_gradient': True,
-                    'estimate_hessian': True
-                    }
+                       'initial_cov': 1e-5,
+                       'estimate_gradient': True,
+                       'estimate_hessian': True
+                      }
     kf = KalmanMethods(kalman_settings)
-
     kf.smoother(sys_model)
 
     plt.subplot(311)
     plt.plot(np.arange(sys_model.no_obs+1), sys_model.states)
     plt.ylabel("states")
     plt.xlabel("time")
+
     plt.subplot(312)
     plt.plot(np.arange(sys_model.no_obs+1), kf.filt_state_est - sys_model.states[:, 0])
     plt.ylabel("error in filtered state estimate")
     plt.xlabel("time")
     plt.title('State estimation')
+
     plt.subplot(313)
     plt.plot(np.arange(sys_model.no_obs+1), kf.smo_state_est[:, 0] - sys_model.states[:, 0])
     plt.ylabel("error in smoothed state estimate")
@@ -166,3 +169,5 @@ def run():
     # plt.plot(grid_mu, gradient_mu)
     # plt.show()
 
+if __name__ == '__main__':
+    run()

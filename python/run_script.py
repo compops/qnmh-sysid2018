@@ -21,6 +21,6 @@ count = range(10)
 
 # example3.main(seed_offset=0)
 
-# example1.main(seed_offset=0)
-# example2.main(seed_offset=0)
-example3.main(seed_offset=0)
+#example1.main(seed_offset=)
+example2.main(seed_offset=0)
+#example3.main(seed_offset=0)

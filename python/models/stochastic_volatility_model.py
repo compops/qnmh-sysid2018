@@ -2,16 +2,12 @@
 import numpy as np
 from scipy.stats import norm
 
-from helpers.data_handling import generate_data, import_data
-from helpers.data_handling import import_data_quandl
-from helpers.inference_model import create_inference_model, fix_true_params
-from helpers.model_params import store_free_params, store_params
-from helpers.model_params import get_free_params, get_params, get_all_params
+from models.base_model import BaseModel
 from helpers.distributions import normal
 from helpers.distributions import gamma
 
 
-class SystemModel(object):
+class StochasticVolatilityModel(BaseModel):
     """ System model class for a stochastic volatility model.
 
         Encodes the model with the parameterisation:
@@ -46,7 +42,7 @@ class SystemModel(object):
         self.params_prior = {'mu': (normal, 0.0, 1),
                              'phi': (normal, 0.95, 0.05),
                              'sigma_v': (gamma, 2.0, 10.0)
-                            }
+                             }
         self.intial_state = []
         self.no_obs = []
         self.states = []
@@ -151,7 +147,7 @@ class SystemModel(object):
             parameters_are_okey = True
         return parameters_are_okey
 
-    def log_prior(self):
+    def log_prior_gradient(self):
         """ Returns the logarithm of the prior distribution.
 
             Returns:
@@ -159,35 +155,7 @@ class SystemModel(object):
                 Second value: the sum of the log-prior for all variables.
 
         """
-        prior = {}
-        for param in self.params:
-            dist = self.params_prior[param][0]
-            hyppar1 = self.params_prior[param][1]
-            hyppar2 = self.params_prior[param][2]
-            prior.update(
-                {param: dist.logpdf(self.params[param], hyppar1, hyppar2)})
-
-        prior_sum = 0.0
-        for param in self.params_to_estimate:
-            prior_sum += prior[param]
-
-        return prior, prior_sum
-
-    def log_prior_gradient(self):
-        """ The gradient of the logarithm of the prior.
-
-            Returns:
-                A dict with an entry for each parameter.
-
-        """
-        gradients = {}
-        for param in self.params:
-            dist = self.params_prior[param][0]
-            value = self.params[param]
-            hyppar1 = self.params_prior[param][1]
-            hyppar2 = self.params_prior[param][2]
-            gradient = dist.logpdf_gradient(value, hyppar1, hyppar2)
-            gradients.update({param: gradient})
+        gradients = super(StochasticVolatilityModel, self).log_prior_gradient()
 
         gradients['phi'] *= (1.0 - self.params['phi']**2)
         gradients['sigma_v'] *= self.params['sigma_v']
@@ -200,17 +168,8 @@ class SystemModel(object):
                 A dict with an entry for each parameter.
 
         """
-        hessians = {}
-        gradients = {}
-        for param in self.params:
-            dist = self.params_prior[param][0]
-            value = self.params[param]
-            hyppar1 = self.params_prior[param][1]
-            hyppar2 = self.params_prior[param][2]
-            gradient = dist.logpdf_gradient(value, hyppar1, hyppar2)
-            hessian = dist.logpdf_hessian(value, hyppar1, hyppar2)
-            gradients.update({param: gradient})
-            hessians.update({param: hessian})
+        gradients = super(StochasticVolatilityModel, self).log_prior_gradient()
+        hessians = super(StochasticVolatilityModel, self).log_prior_hessian()
 
         gradients['phi'] *= (1.0 - 2.0 * self.params['phi']**2)
         hessians['phi'] *= (1.0 - self.params['phi']**2)
@@ -218,7 +177,6 @@ class SystemModel(object):
         gradients['sigma_v'] *= self.params['sigma_v']
         hessians['sigma_v'] *= self.params['sigma_v']
         hessians['sigma_v'] += gradients['sigma_v']
-
         return hessians
 
     def log_joint_gradient(self, next_state, cur_state, time_index):
@@ -236,9 +194,9 @@ class SystemModel(object):
                 A dict with an entry for each parameter.
 
         """
-
         state_quad_term = next_state - self.params['mu']
         state_quad_term -= self.params['phi'] * (cur_state - self.params['mu'])
+
         q_matrix = self.params['sigma_v']**(-2)
 
         gradient_mu = q_matrix * state_quad_term * (1.0 - self.params['phi'])
@@ -270,11 +228,11 @@ class SystemModel(object):
     def transform_params_from_free(self):
         """ Computes and store the values of the standard parameters.
 
-             These transformations are dictated directly from the model. See
-             the docstring for the model class for more information. The
-             values of the standard parameters are computed by applying
-             the transformation to the current reparameterised parameters stored
-             in the model object.
+            These transformations are dictated directly from the model. See
+            the docstring for the model class for more information. The
+            values of the standard parameters are computed by applying
+            the transformation to the current reparameterised parameters stored
+            in the model object.
 
         """
         self.params['mu'] = self.free_params['mu']
@@ -297,22 +255,4 @@ class SystemModel(object):
         jacobian.update({'mu': 0.0})
         jacobian.update({'phi': np.log(1.0 - self.params['phi']**2)})
         jacobian.update({'sigma_v': np.log(self.params['sigma_v'])})
-        output = 0.0
-        if self.no_params_to_estimate > 1:
-            for param in self.params_to_estimate:
-                output += jacobian[param]
-        else:
-            output += jacobian[self.params_to_estimate]
-        return output
-
-    # Import helpers to the model object
-    generate_data = generate_data
-    import_data = import_data
-    store_free_params = store_free_params
-    store_params = store_params
-    get_free_params = get_free_params
-    get_params = get_params
-    get_all_params = get_all_params
-    create_inference_model = create_inference_model
-    fix_true_params = fix_true_params
-    import_data_quandl = import_data_quandl
+        return self._compile_log_jacobian(jacobian)

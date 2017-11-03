@@ -2,15 +2,12 @@
 import numpy as np
 from scipy.stats import norm
 
-from helpers.data_handling import generate_data, import_data
-from helpers.inference_model import create_inference_model, fix_true_params
-from helpers.model_params import store_free_params, store_params
-from helpers.model_params import get_free_params, get_params, get_all_params
+from models.base_model import BaseModel
 from helpers.distributions import normal
 from helpers.distributions import gamma
 
 
-class SystemModel(object):
+class LinearGaussianModel(BaseModel):
     """ System model class for a linear Gaussian state-space model.
 
         Encodes the model with the parameterisation:
@@ -156,7 +153,7 @@ class SystemModel(object):
             parameters_are_okey = True
         return parameters_are_okey
 
-    def log_prior(self):
+    def log_prior_gradient(self):
         """ Returns the logarithm of the prior distribution.
 
             Returns:
@@ -164,35 +161,7 @@ class SystemModel(object):
                 Second value: the sum of the log-prior for all variables.
 
         """
-        prior = {}
-        for param in self.params:
-            dist = self.params_prior[param][0]
-            hyppar1 = self.params_prior[param][1]
-            hyppar2 = self.params_prior[param][2]
-            prior.update(
-                {param: dist.logpdf(self.params[param], hyppar1, hyppar2)})
-
-        prior_sum = 0.0
-        for param in self.params_to_estimate:
-            prior_sum += prior[param]
-
-        return prior, prior_sum
-
-    def log_prior_gradient(self):
-        """ The gradient of the logarithm of the prior.
-
-            Returns:
-                A dict with an entry for each parameter.
-
-        """
-        gradients = {}
-        for param in self.params:
-            dist = self.params_prior[param][0]
-            value = self.params[param]
-            hyppar1 = self.params_prior[param][1]
-            hyppar2 = self.params_prior[param][2]
-            gradient = dist.logpdf_gradient(value, hyppar1, hyppar2)
-            gradients.update({param: gradient})
+        gradients = super(LinearGaussianModel, self).log_prior_gradient()
 
         gradients['phi'] *= (1.0 - self.params['phi']**2)
         gradients['sigma_v'] *= self.params['sigma_v']
@@ -206,17 +175,8 @@ class SystemModel(object):
                 A dict with an entry for each parameter.
 
         """
-        hessians = {}
-        gradients = {}
-        for param in self.params:
-            dist = self.params_prior[param][0]
-            value = self.params[param]
-            hyppar1 = self.params_prior[param][1]
-            hyppar2 = self.params_prior[param][2]
-            gradient = dist.logpdf_gradient(value, hyppar1, hyppar2)
-            hessian = dist.logpdf_hessian(value, hyppar1, hyppar2)
-            gradients.update({param: gradient})
-            hessians.update({param: hessian})
+        gradients = super(LinearGaussianModel, self).log_prior_gradient()
+        hessians = super(LinearGaussianModel, self).log_prior_hessian()
 
         gradients['phi'] *= (1.0 - 2.0 * self.params['phi']**2)
         hessians['phi'] *= (1.0 - self.params['phi']**2)
@@ -227,7 +187,6 @@ class SystemModel(object):
         gradients['sigma_e'] *= self.params['sigma_e']
         hessians['sigma_e'] *= self.params['sigma_e']
         hessians['sigma_e'] += gradients['sigma_e']
-
         return hessians
 
     def log_joint_gradient(self, next_state, cur_state, time_index):
@@ -301,8 +260,8 @@ class SystemModel(object):
     def log_jacobian(self):
         """ Computes the sum of the log-Jacobian.
 
-            These Jacobians are dicted by the transformations for the model. See
-            the docstring for the model class for more information.
+            These Jacobians are dictated by the transformations for the model.
+            See the docstring for the model class for more information.
 
             Returns:
                 the sum of the logarithm of the Jacobian of the parameter
@@ -315,21 +274,4 @@ class SystemModel(object):
         jacobian.update({'phi': np.log(1.0 - self.params['phi']**2)})
         jacobian.update({'sigma_v': np.log(self.params['sigma_v'])})
         jacobian.update({'sigma_e': np.log(self.params['sigma_e'])})
-        output = 0.0
-        if self.no_params_to_estimate > 1:
-            for param in self.params_to_estimate:
-                output += jacobian[param]
-        else:
-            output += jacobian[self.params_to_estimate]
-        return output
-
-    # Import helpers to the model object
-    generate_data = generate_data
-    import_data = import_data
-    store_free_params = store_free_params
-    store_params = store_params
-    get_free_params = get_free_params
-    get_params = get_params
-    get_all_params = get_all_params
-    create_inference_model = create_inference_model
-    fix_true_params = fix_true_params
+        return self._compile_log_jacobian(jacobian)
