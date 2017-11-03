@@ -1,5 +1,8 @@
 """Helpers for resampling in the particle filter.
    The code is adopted from filterpy (https://github.com/rlabbe/filterpy)."""
+
+from __future__ import absolute_import
+
 import numpy as np
 cimport numpy as np
 

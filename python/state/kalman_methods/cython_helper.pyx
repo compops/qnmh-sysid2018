@@ -1,10 +1,59 @@
-"""Cython helper for Kalman RTS smoothing."""
+"""Cython helpers for Kalman filtering and smoothing."""
+from __future__ import absolute_import
 
 import numpy as np
 
-def rts_helper(observations, params, pred_state_est, pred_state_cov,
-               filt_state_est, filt_state_cov, kalman_gain,
-               estimate_gradient=False, estimate_hessian=False):
+def filter(observations, params, initial_state, initial_cov):
+    """Kalman filter."""
+    no_obs = len(observations) - 1
+    mu = params[0]
+    phi = params[1]
+    sigmav2 = params[2]
+    sigmae2 = params[3]
+
+    pred_state_est = np.zeros((no_obs + 1))
+    pred_state_cov = np.zeros((no_obs + 1))
+    filt_state_est = np.zeros((no_obs + 1))
+    filt_state_cov = np.zeros((no_obs + 1))
+    kalman_gain = np.zeros(no_obs + 1)
+    log_like = 0.0
+
+    filt_state_est[0] = initial_state
+    filt_state_cov[0] = initial_cov
+
+    for i in range(1, no_obs + 1):
+        # Prediction step
+        pred_state_est[i] = mu
+        pred_state_est[i] += phi * (filt_state_est[i-1] - mu)
+        pred_state_cov[i] = phi * filt_state_cov[i-1] * phi
+        pred_state_cov[i] += sigmav2
+
+        # Correction step
+        pred_obs_cov = pred_state_cov[i] + sigmae2
+        kalman_gain[i] = pred_state_cov[i] / pred_obs_cov
+
+        scaled_innovation = (observations[i] - pred_state_est[i])
+        scaled_innovation *= kalman_gain[i]
+        filt_state_est[i] = pred_state_est[i] + scaled_innovation
+        cov_change = kalman_gain[i] * pred_state_cov[i]
+        filt_state_cov[i] = pred_state_cov[i] - cov_change
+
+        mean = pred_state_est[i]
+        stdev = np.sqrt(pred_obs_cov)
+        log_like += norm_logpdf(observations[i], mean, stdev)
+
+    return {'pred_state_est': pred_state_est,
+            'pred_state_cov': pred_state_cov,
+            'kalman_gain': kalman_gain,
+            'filt_state_est': filt_state_est,
+            'filt_state_cov': filt_state_cov,
+            'log_like': log_like
+            }
+
+
+def smoother(observations, params, pred_state_est, pred_state_cov,
+             filt_state_est, filt_state_cov, kalman_gain,
+             estimate_gradient=False):
     """Kalman RTS smoother."""
     no_obs = len(observations) - 1
     mu = params[0]
@@ -32,7 +81,7 @@ def rts_helper(observations, params, pred_state_est, pred_state_cov,
         smo_state_cov[i] = filt_state_cov[i]
         smo_state_cov[i] += smo_gain[i]**2 * diff
 
-    if estimate_gradient or estimate_hessian:
+    if estimate_gradient:
         # Calculate the two-step smoothing covariance
         two_step = (1 - kalman_gain[-1]) * phi
         two_step *= filt_state_cov[-1]
@@ -45,7 +94,7 @@ def rts_helper(observations, params, pred_state_est, pred_state_cov,
             term4 = phi * filt_state_cov[i]
             smo_state_cov_twostep[i] = term1 + term2 * (term3 - term4)
 
-    if estimate_gradient or estimate_hessian:
+    if estimate_gradient:
         # Gradient and Hessian estimation using Segal and Weinstein estimator
         gradient_part = np.zeros((4, no_obs))
         for i in range(1, no_obs):
@@ -74,8 +123,6 @@ def rts_helper(observations, params, pred_state_est, pred_state_cov,
 
         log_joint_gradient_estimate = np.sum(gradient_part, axis=1)
 
-
-    if estimate_hessian:
         part1 = np.mat(gradient_part).transpose()
         part1 = np.dot(np.mat(gradient_part), part1)
         part2 = np.mat(log_joint_gradient_estimate)
@@ -88,3 +135,9 @@ def rts_helper(observations, params, pred_state_est, pred_state_cov,
             'log_joint_gradient_estimate': log_joint_gradient_estimate,
             'log_joint_hessian_estimate': log_joint_hessian_estimate
            }
+
+def norm_logpdf(parm, mean, stdev):
+    """Helper for computing the log of the Gaussian pdf."""
+    quad_term = -0.5 / (stdev**2) * (parm - mean)**2
+    return -0.5 * np.log(2 * np.pi * stdev**2) + quad_term
+

@@ -46,9 +46,15 @@ def import_data(model, file_name):
     data_frame = pd.read_csv(file_name)
 
     if 'observation' in list(data_frame):
-        obs = data_frame['observation'].values[0:(model.no_obs + 1)]
+        if model.no_obs:
+            obs = data_frame['observation'].values[0:(model.no_obs + 1)]
+        else:
+            obs = data_frame['observation'].values
+            model.no_obs = len(obs) - 1
         obs = np.array(obs, copy=True).reshape((model.no_obs + 1, 1))
         model.obs = obs
+    else:
+        raise ValueError("No observations in file, header must be observation.")
 
     if 'state' in list(data_frame):
         states = data_frame['state'].values[0:(model.no_obs + 1)]

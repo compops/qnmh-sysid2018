@@ -1,4 +1,6 @@
 """Bootstrap particle filter for linear Gaussian model"""
+from __future__ import absolute_import
+
 import numpy as np
 cimport numpy as np
 

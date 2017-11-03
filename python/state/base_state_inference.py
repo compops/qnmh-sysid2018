@@ -15,7 +15,7 @@ class BaseStateInference(object):
     hessian_internal = []
 
     def __repr__(self):
-        pass
+        self.name
 
     def _estimate_gradient_and_hessian(self, model):
         """Inserts gradients and Hessian of the log-priors into the estimates
@@ -23,13 +23,13 @@ class BaseStateInference(object):
 
         gradient_estimate = self.results['log_joint_gradient_estimate']
         hessian_estimate = self.results['log_joint_hessian_estimate']
-
         gradient = {}
         gradient_internal = []
+
         i = 0
-        for parameter in model.params.keys():
-            if parameter in model.params_to_estimate:
-                gradient.update({parameter: gradient_estimate[i]})
+        for param in model.params.keys():
+            if param in model.params_to_estimate:
+                gradient.update({param: gradient_estimate[i]})
                 gradient_internal.append(gradient_estimate[i])
             i += 1
 
@@ -38,23 +38,23 @@ class BaseStateInference(object):
             log_prior_gradient = model.log_prior_gradient()
             i = 0
 
-            for first_param in log_prior_gradient.keys():
-                gradient_estimate[i] += log_prior_gradient[first_param]
+            for param1 in log_prior_gradient.keys():
+                gradient_estimate[i] += log_prior_gradient[param1]
 
                 if self.settings['estimate_hessian']:
                     log_prior_hessian = model.log_prior_hessian()
                     j = 0
 
-                    for second_param in log_prior_gradient.keys():
-                        hessian_estimate[i, j] -= log_prior_hessian[first_param]
-                        hessian_estimate[i, j] -= log_prior_hessian[second_param]
+                    for param2 in log_prior_gradient.keys():
+                        hessian_estimate[i, j] -= log_prior_hessian[param1]
+                        hessian_estimate[i, j] -= log_prior_hessian[param2]
                         j += 1
                 i += 1
 
         if self.settings['estimate_gradient']:
-            self.gradient_internal = np.array(gradient_internal)
-            self.gradient = gradient
+            self.results.update({'gradient_internal': np.array(gradient_internal)})
+            self.results.update({'gradient': gradient})
 
         if self.settings['estimate_hessian']:
             idx = model.params_to_estimate_idx
-            self.hessian_internal = np.array(hessian_estimate[np.ix_(idx, idx)])
+            self.results.update({'hessian_internal': np.array(hessian_estimate[np.ix_(idx, idx)])})
