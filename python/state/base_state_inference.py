@@ -50,11 +50,7 @@ class BaseStateInference(object):
                         hessian_estimate[i, j] -= log_prior_hessian[param2]
                         j += 1
                 i += 1
-
-        if self.settings['estimate_gradient']:
             self.results.update({'gradient_internal': np.array(gradient_internal)})
             self.results.update({'gradient': gradient})
-
-        if self.settings['estimate_hessian']:
             idx = model.params_to_estimate_idx
             self.results.update({'hessian_internal': np.array(hessian_estimate[np.ix_(idx, idx)])})
