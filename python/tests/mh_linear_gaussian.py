@@ -16,7 +16,7 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
     sys_model.create_inference_model(params_to_estimate = ('mu', 'phi', 'sigma_v'))
 
     # Kalman filter and smoother
-    kf = KalmanMethods()<
+    kf = KalmanMethods()
 
     # Particle filter and smoother
     pf = ParticleMethods()
