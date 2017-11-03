@@ -1,3 +1,4 @@
+import sys
 from joblib import Parallel, delayed
 import multiprocessing
 
@@ -9,8 +10,8 @@ import scripts_draft1.example3_stochastic_volatility_particle as example3
 num_cores = 4
 count = range(10)
 
-#res1 = Parallel(n_jobs=num_cores)(delayed(example1.main)(i) for i in count)
-#res2 = Parallel(n_jobs=num_cores)(delayed(example2.main)(i) for i in count)
+# res1 = Parallel(n_jobs=num_cores)(delayed(example1.main)(i) for i in count)
+# res2 = Parallel(n_jobs=num_cores)(delayed(example2.main)(i) for i in count)
 # example3.run(seed_offset=0)
 
 # for i in range(10):
@@ -21,6 +22,16 @@ count = range(10)
 
 # example3.main(seed_offset=0)
 
-#example1.main(seed_offset=)
-example2.main(seed_offset=0)
+if len(sys.argv) > 1:
+    if int(sys.argv[1]) == 1:
+        example1.main(seed_offset=0)
+    elif int(sys.argv[1]) == 2:
+        example2.main(seed_offset=0)
+    elif int(sys.argv[1]) == 3:
+        example3.main(seed_offset=0)
+    else:
+        raise NameError("Unknown example to run...")
+
+#example1.main(seed_offset=0)
+#example2.main(seed_offset=0)
 #example3.main(seed_offset=0)

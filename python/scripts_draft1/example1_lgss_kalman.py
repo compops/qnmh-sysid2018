@@ -24,12 +24,12 @@ def main(seed_offset=0):
                    'hessian_correction_verbose': False,
                    'no_iters_between_progress_reports': 100,
                    'qn_memory_length': 20,
-                   'qn_initial_hessian': 'fixed',
+                   'qn_initial_hessian': 'scaled_gradient',
                    'qn_strategy': None,
-                   'qn_bfgs_curvature_cond': 'ignore',
+                   'qn_bfgs_curvature_cond': 'damped',
                    'qn_sr1_safe_parameterisation': False,
                    'qn_sr1_skip_limit': 1e-8,
-                   'qn_initial_hessian_scaling': 0.10,
+                   'qn_initial_hessian_scaling': 0.01,
                    'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
                    'qn_only_accepted_info': True
                    }

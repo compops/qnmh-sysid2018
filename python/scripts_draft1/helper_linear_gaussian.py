@@ -1,8 +1,8 @@
 import numpy as np
 
 from models.linear_gaussian_model import LinearGaussianModel
-from state.kalman_methods.main import KalmanMethods
-from state.particle_methods.main import ParticleMethods
+from state.kalman_methods.standard import KalmanMethods
+from state.particle_methods.standard import ParticleMethods
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
 
 def run(mh_version, mh_settings, kf_settings, pf_settings,

@@ -84,6 +84,7 @@ def print_greeting(mcmc, state_estimator):
         i += 1
     print("")
     print("Running MH for {} iterations.".format(mcmc.settings['no_iters']))
+    print("")
     print("The rest of the settings are as follows: ")
     for key in mcmc.settings:
         print("{}: {}".format(key, mcmc.settings[key]))

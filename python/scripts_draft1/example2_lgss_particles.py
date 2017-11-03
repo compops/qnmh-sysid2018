@@ -31,7 +31,7 @@ def main(seed_offset=0):
     pf_settings = {'no_particles': 1000,
                    'resampling_method': 'systematic',
                    'fixed_lag': 10,
-                   'initial_state': 0,0,
+                   'initial_state': 0.0,
                    'generate_initial_state': True,
                    'estimate_gradient': True,
                    'estimate_hessian': True,
@@ -67,7 +67,7 @@ def main(seed_offset=0):
     sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
                 'such that the gradient gives a step of 0.01. Non-PD ',
                 'estimates are corrected by flipping negative eigenvalues.')
-    mh.run('qmh',,
+    mh.run('qmh',
            mh_settings=mh_settings,
            kf_settings=None,
            pf_settings=pf_settings,
