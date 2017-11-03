@@ -46,8 +46,7 @@ def print_progress_report(mcmc, max_iact_lag=100):
             print(" Current log-SJD value:")
             print(["%.2f" % np.log(mcmc.compute_sjd())])
     except:
-        print("")
-        print("Failed to compute IACT and log-SJD.")
+        print(" Failed to compute IACT and log-SJD.")
     if mcmc.settings['hessian_estimate'] is not 'kalman':
         if (iter > mcmc.settings['qn_memory_length']):
             no_samples_hess_est = mcmc.no_samples_hess_est[range(iter)]
@@ -85,6 +84,9 @@ def print_greeting(mcmc, state_estimator):
         i += 1
     print("")
     print("Running MH for {} iterations.".format(mcmc.settings['no_iters']))
+    print("The rest of the settings are as follows: ")
+    for key in mcmc.settings:
+        print("{}: {}".format(key, mcmc.settings[key]))
     print("")
     print("###################################################################")
 
