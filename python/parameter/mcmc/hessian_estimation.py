@@ -63,7 +63,7 @@ def get_hessian(mcmc, state_estimator, prop_gradient=None):
                 return correct_hessian(inverse_hessian, mcmc)
 
     if mcmc.settings['verbose']:
-        print("Current inverse_hessian: " + str(inverse_hessian) + ".")
+        print("Current diag Hessian: " + str(["%.3f" % v for v in np.sqrt(np.diag(inverse_hessian))]))
     return inverse_hessian
 
 

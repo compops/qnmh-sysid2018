@@ -240,6 +240,13 @@ class MetropolisHastings(BaseParameterInference):
         self._initialise_params(state_estimator, self.model)
 
         for i in range(1, no_iters):
+
+            if self.settings['verbose']:
+                print("")
+                print("#######################################################")
+                print("Iteration: {} of {}.".format(i, no_iters))
+                print("")
+
             self.current_iter = i
             self._propose_params(self.model)
             self._compute_accept_prob(state_estimator, self.model)
@@ -248,19 +255,19 @@ class MetropolisHastings(BaseParameterInference):
             else:
                 self._reject_params()
 
-            if self.settings['verbose']:
-                print("Current unrestricted parameters: " +
-                      str(self.params[i, :]) + ".")
-                print("Current restricted parameters: " +
-                      str(self.free_params[i, :]) + ".")
-
-                if self.settings['verbose_wait_enter']:
-                    input("Press ENTER to continue...")
+            if self.settings['verbose_wait_enter']:
+                input("Press ENTER to continue...")
 
             flag = self.settings['no_iters_between_progress_reports']
             flag = np.remainder(i + 1, flag) == 0
             if flag:
                 print_progress_report(self)
+
+            if self.settings['verbose']:
+                print("")
+                print("#######################################################")
+                print("")
+
         print("Run of MH algorithm complete...")
 
     def _accept_params(self):
@@ -298,7 +305,7 @@ class MetropolisHastings(BaseParameterInference):
 
     def _initialise_params(self, state, model):
         """ Initialise the Metropolis-Hastings algorithm. """
-        model.store_free_params(self.settings['initial_params'])
+        model.store_params(self.settings['initial_params'])
 
         if model.check_parameters():
             self.log_jacobian[0] = model.log_jacobian()
@@ -309,7 +316,7 @@ class MetropolisHastings(BaseParameterInference):
             else:
                 state.filter(model)
 
-            self.log_like[0] = state.results['log_like']
+            self.log_like[0] = state.results['log_like'][0]
             init_state = state.results['filt_state_est']
             self.states[0, :] = init_state.reshape(model.no_obs+1)
 
@@ -320,7 +327,7 @@ class MetropolisHastings(BaseParameterInference):
                                                        self.gradient[0, :],
                                                        self.hess[0, :, :])
 
-            self.free_params[0, :] = self.settings['initial_params']
+            self.free_params[0, :] = model.get_free_params()
             self.params[0, :] = model.get_params()
             self.accept_prob[0] = 1.0
         else:
@@ -336,7 +343,7 @@ class MetropolisHastings(BaseParameterInference):
                     offset = self.settings['qn_memory_length']
 
         no_param = self.model.no_params_to_estimate
-        cur_paramss = self.free_params[self.current_iter - offset, :]
+        cur_params = self.free_params[self.current_iter - offset, :]
         cur_nat_grad = self.nat_gradient[self.current_iter - offset, :]
         cur_hess = self.hess[self.current_iter - offset, :, :]
 
@@ -355,11 +362,12 @@ class MetropolisHastings(BaseParameterInference):
                 perturbation = np.matmul(cur_hess_root, perturbation)
 
         param_change = cur_nat_grad + perturbation
-        prop_params = cur_paramss + param_change
+        prop_params = cur_params + param_change
 
         if self.settings['verbose']:
-            print("Proposing unrestricted parameters: " + str(prop_params) +
-                  " given " + str(cur_paramss) + ".")
+            print("cur_params: " + str(["%.3f" % v for v in cur_params]))
+            print("prop_free_params: " + str(["%.3f" % v for v in prop_params]))
+            print("")
 
         model.store_free_params(prop_params)
         self.prop_params[self.current_iter, :] = model.get_params()
@@ -375,9 +383,9 @@ class MetropolisHastings(BaseParameterInference):
 
         cur_free_params = self.free_params[self.current_iter - offset, :]
         cur_params = self.params[self.current_iter - offset, :]
-        cur_log_jacobian = self.log_jacobian[self.current_iter - offset, :]
+        cur_log_jacobian = self.log_jacobian[self.current_iter - offset, 0]
         cur_log_prior = self.log_prior[self.current_iter - offset, :]
-        cur_log_like = self.log_like[self.current_iter - offset, :]
+        cur_log_like = self.log_like[self.current_iter - offset, 0]
         cur_nat_grad = self.nat_gradient[self.current_iter - offset, :]
         cur_hess = self.hess[self.current_iter - offset, :, :]
 
@@ -394,7 +402,7 @@ class MetropolisHastings(BaseParameterInference):
             else:
                 state.filter(model)
 
-            prop_log_like = state.results['log_like']
+            prop_log_like = state.results['log_like'][0]
             prop_states = state.results['filt_state_est'].reshape(model.no_obs+1)
 
             prop_grad = get_gradient(self, state)
@@ -443,14 +451,17 @@ class MetropolisHastings(BaseParameterInference):
 
             if self.settings['verbose']:
                 if is_valid_covariance_matrix(prop_hess):
-                    print("prop_free_params" + str(prop_free_params) + ".")
-                    print("prop_prop_mean: {:.3f}".format(cur_mean))
-                    print("prop_prop_stdev: {:.3f}".format(np.sqrt(np.diag(cur_hess)))
+                    print("")
+                    print("prop_params: " + str(["%.3f" % v for v in prop_params]))
+                    print("prop_free_params: " + str(["%.3f" % v for v in prop_free_params]))
+                    print("prop_prop_mean: " + str(["%.3f" % v for v in cur_mean]))
+                    print("prop_prop_stdev: " + str(["%.3f" % v for v in np.sqrt(np.diag(cur_hess))]))
                     print("prop_prop_value: {:.3f}".format(prop_prop))
                     print("")
-                    print("cur_free_params" + str(cur_free_params) + ".")
-                    print("cur_prop_mean: {:.3f}".format(prop_mean))
-                    print("cur_prop_stdev: {:.3f}".format(np.sqrt(np.diag(prop_hess)))
+                    print("cur_params: " + str(["%.3f" % v for v in cur_params]))
+                    print("cur_free_params: " + str(["%.3f" % v for v in cur_free_params]))
+                    print("cur_prop_mean: " + str(["%.3f" % v for v in prop_mean]))
+                    print("cur_prop_stdev: " + str(["%.3f" % v for v in np.sqrt(np.diag(prop_hess))]))
                     print("cur_prop_value: {:.3f}".format(cur_prop))
                     print("")
                     print("prop_log_like: {:.3f}".format(prop_log_like))
@@ -460,7 +471,7 @@ class MetropolisHastings(BaseParameterInference):
                     print("log_prop_diff: {:.3f}".format(log_prop_diff))
                     print("log_jacob_diff: {:.3f}".format(log_jacob_diff))
                     print("")
-                    print("accept_prob: {:.3f}".format(accept_prob))
+                    print("accept_prob: {:.3f}".format(np.min((1.0,accept_prob))))
                     print("")
 
             self.accept_prob[self.current_iter] = np.min((1.0, accept_prob))

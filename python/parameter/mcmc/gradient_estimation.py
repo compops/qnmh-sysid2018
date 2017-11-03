@@ -22,7 +22,7 @@ def get_gradient(mcmc, state_estimator):
         gradient = np.zeros(mcmc.model.no_params_to_estimate)
 
     if mcmc.settings['verbose']:
-        print("Current gradient: " + str(gradient) + ".")
+        print("Current gradient: " + str(["%.3f" % v for v in gradient]))
     return gradient
 
 
@@ -46,7 +46,7 @@ def get_nat_gradient(mcmc, gradient, inverse_hessian):
     gradient_requested = False
     hessian_corrected = False
 
-    if mcmc.settings['qn_memory_length']:
+    if mcmc.alg_type is 'qmh':
         if mcmc.current_iter > mcmc.settings['qn_memory_length']:
             gradient_requested = True
     else:
@@ -66,5 +66,5 @@ def get_nat_gradient(mcmc, gradient, inverse_hessian):
         natural_gradient = np.zeros(mcmc.model.no_params_to_estimate)
 
     if mcmc.settings['verbose']:
-        print("Current natural gradient: " + str(natural_gradient) + ".")
+        print("Current natural gradient: " + str(["%.3f" % v for v in natural_gradient]))
     return np.real(natural_gradient)

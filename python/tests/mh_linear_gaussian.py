@@ -32,7 +32,7 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
                    'no_burnin_iters': 200,
                    'base_hessian': hessian_estimate,
                    'initial_params': (0.2, 0.5, 1.0),
-                   'verbose': True
+                   'verbose': False
                    }
     mh = MetropolisHastings(sys_model, alg_type, mh_settings)
 
@@ -57,7 +57,6 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
             mh.settings['step_size'] = 0.8
         else:
             raise NameError("Unknown alg_type (mh0/mh1/mh2/qmh).")
-        mh.settings['step_size'] = 0.5 * mh.settings['step_size']
         mh.run(pf)
     else:
         raise NameError("Unknown filter_method (kalman/particle).")
