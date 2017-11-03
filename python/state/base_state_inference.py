@@ -40,15 +40,13 @@ class BaseStateInference(object):
 
             for param1 in log_prior_gradient.keys():
                 gradient_estimate[i] += log_prior_gradient[param1]
+                log_prior_hessian = model.log_prior_hessian()
+                j = 0
 
-                if self.settings['estimate_hessian']:
-                    log_prior_hessian = model.log_prior_hessian()
-                    j = 0
-
-                    for param2 in log_prior_gradient.keys():
-                        hessian_estimate[i, j] -= log_prior_hessian[param1]
-                        hessian_estimate[i, j] -= log_prior_hessian[param2]
-                        j += 1
+                for param2 in log_prior_gradient.keys():
+                    hessian_estimate[i, j] -= log_prior_hessian[param1]
+                    hessian_estimate[i, j] -= log_prior_hessian[param2]
+                    j += 1
                 i += 1
             self.results.update({'gradient_internal': np.array(gradient_internal)})
             self.results.update({'gradient': gradient})
