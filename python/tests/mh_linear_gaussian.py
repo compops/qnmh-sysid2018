@@ -20,7 +20,7 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
 
     # Particle filter and smoother
     pf = ParticleMethods()
-    pf.settings.update({'no_particles': 1000,
+    pf.settings.update({'no_particles': 5000,
                         'fixed_lag': 10})
 
     # Metropolis-Hastings
@@ -65,6 +65,6 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
     if plotting:
         mh.plot()
     else:
-        mh.save_to_file(output_path='results',
+        mh.save_to_file(output_path='../results-tests'
                         sim_name='test_linear_gaussian_' + alg_type + '_' + filter_method,
                         sim_desc='...')
