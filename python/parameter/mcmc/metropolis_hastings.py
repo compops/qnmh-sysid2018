@@ -191,7 +191,7 @@ class MetropolisHastings(BaseParameterInference):
         self.free_params = np.zeros((no_iters, no_params_to_estimate))
         self.params = np.zeros((no_iters, no_params_to_estimate))
         self.prop_free_params = np.zeros((no_iters, no_params_to_estimate))
-        self.prop_param = np.zeros((no_iters, no_params_to_estimate))
+        self.prop_params = np.zeros((no_iters, no_params_to_estimate))
 
         self.log_prior = np.zeros((no_iters, 1))
         self.log_like = np.zeros((no_iters, 1))
@@ -267,7 +267,7 @@ class MetropolisHastings(BaseParameterInference):
         """ Record the accepted parameters. """
         i = self.current_iter
         self.free_params[i, :] = self.prop_free_params[i, :]
-        self.params[i, :] = self.prop_param[i, :]
+        self.params[i, :] = self.prop_params[i, :]
         self.log_jacobian[i] = self.prop_log_jacobian[i]
         self.log_prior[i, :] = self.prop_log_prior[i, :]
         self.log_like[i, :] = self.prop_log_like[i, :]
@@ -336,33 +336,33 @@ class MetropolisHastings(BaseParameterInference):
                     offset = self.settings['qn_memory_length']
 
         no_param = self.model.no_params_to_estimate
-        cur_params = self.free_params[self.current_iter - offset, :]
+        cur_paramss = self.free_params[self.current_iter - offset, :]
         cur_nat_grad = self.nat_gradient[self.current_iter - offset, :]
-        curr_hess = self.hess[self.current_iter - offset, :, :]
+        cur_hess = self.hess[self.current_iter - offset, :, :]
 
         if no_param == 1:
-            perturbation = np.sqrt(np.abs(curr_hess)) * np.random.normal()
+            perturbation = np.sqrt(np.abs(cur_hess)) * np.random.normal()
         else:
             try:
                 perturbation = np.random.multivariate_normal(np.zeros(no_param),
-                                                             curr_hess)
+                                                             cur_hess)
             except RuntimeWarning:
                 print("Warning raised in np.random.multivariate_normal " +
                       "so using Cholesky to generate random variables.")
-                curr_hess_root = np.linalg.cholesky(curr_hess)
+                cur_hess_root = np.linalg.cholesky(cur_hess)
                 perturbation = np.random.multivariate_normal(np.zeros(no_param),
                                                              np.eye(no_param))
-                perturbation = np.matmul(curr_hess_root, perturbation)
+                perturbation = np.matmul(cur_hess_root, perturbation)
 
         param_change = cur_nat_grad + perturbation
-        prop_param = cur_params + param_change
+        prop_params = cur_paramss + param_change
 
         if self.settings['verbose']:
-            print("Proposing unrestricted parameters: " + str(prop_param) +
-                  " given " + str(cur_params) + ".")
+            print("Proposing unrestricted parameters: " + str(prop_params) +
+                  " given " + str(cur_paramss) + ".")
 
-        model.store_free_params(prop_param)
-        self.prop_param[self.current_iter, :] = model.get_params()
+        model.store_free_params(prop_params)
+        self.prop_params[self.current_iter, :] = model.get_params()
         self.prop_free_params[self.current_iter, :] = model.get_free_params()
 
     def _compute_accept_prob(self, state, model):
@@ -373,16 +373,16 @@ class MetropolisHastings(BaseParameterInference):
                 if self.current_iter > self.settings['qn_memory_length']:
                     offset = self.settings['qn_memory_length']
 
-        cur_free_param = self.free_params[self.current_iter - offset, :]
-        cur_param = self.params[self.current_iter - offset, :]
+        cur_free_params = self.free_params[self.current_iter - offset, :]
+        cur_params = self.params[self.current_iter - offset, :]
         cur_log_jacobian = self.log_jacobian[self.current_iter - offset, :]
         cur_log_prior = self.log_prior[self.current_iter - offset, :]
         cur_log_like = self.log_like[self.current_iter - offset, :]
         cur_nat_grad = self.nat_gradient[self.current_iter - offset, :]
-        curr_hess = self.hess[self.current_iter - offset, :, :]
+        cur_hess = self.hess[self.current_iter - offset, :, :]
 
         prop_free_params = self.prop_free_params[self.current_iter, :]
-        prop_param = self.prop_param[self.current_iter, :]
+        prop_params = self.prop_params[self.current_iter, :]
         model.store_free_params(prop_free_params)
 
         if model.check_parameters():
@@ -405,13 +405,13 @@ class MetropolisHastings(BaseParameterInference):
                 log_prior_diff = float(prop_log_prior - cur_log_prior)
                 log_like_diff = float(prop_log_like - cur_log_like)
 
-                cur_mean = cur_free_param + cur_nat_grad
+                cur_mean = cur_free_params + cur_nat_grad
                 prop_prop = multivariate_gaussian.logpdf(prop_free_params,
                                                          cur_mean,
-                                                         curr_hess)
+                                                         cur_hess)
 
                 prop_mean = prop_free_params + prop_nat_grad
-                cur_prop = multivariate_gaussian.logpdf(cur_free_param,
+                cur_prop = multivariate_gaussian.logpdf(cur_free_params,
                                                         prop_mean,
                                                         prop_hess)
 
@@ -426,7 +426,7 @@ class MetropolisHastings(BaseParameterInference):
                         print("Rejecting as overflow occured.")
                     accept_prob = 0.0
                 if self.settings['trust_region_size']:
-                    abs_param_diff = np.abs(prop_free_params - cur_free_param)
+                    abs_param_diff = np.abs(prop_free_params - cur_free_params)
                     max_param_diff = np.max(abs_param_diff)
                     if max_param_diff > self.settings['trust_region_size']:
                         accept_prob = 0.0
@@ -443,16 +443,25 @@ class MetropolisHastings(BaseParameterInference):
 
             if self.settings['verbose']:
                 if is_valid_covariance_matrix(prop_hess):
-                    print("cur_free_param" + str(cur_free_param) + ".")
                     print("prop_free_params" + str(prop_free_params) + ".")
-                    print("prop_log_like: " + str(prop_log_like) + ".")
-                    print(": " + str() + ".")
-                    print("loglike_diff: " + str(log_like_diff) + ".")
-                    print("prop_prop: " + str(prop_prop) + ".")
-                    print("cur_prop: " + str(cur_prop) + ".")
-                    print("log_prop_diff: " + str(log_prop_diff) + ".")
-                    print("log_jacob_diff: " + str(log_jacob_diff) + ".")
-                    print("accept_prob: " + str(accept_prob) + ".")
+                    print("prop_prop_mean: {:.3f}".format(cur_mean))
+                    print("prop_prop_stdev: {:.3f}".format(np.sqrt(np.diag(cur_hess)))
+                    print("prop_prop_value: {:.3f}".format(prop_prop))
+                    print("")
+                    print("cur_free_params" + str(cur_free_params) + ".")
+                    print("cur_prop_mean: {:.3f}".format(prop_mean))
+                    print("cur_prop_stdev: {:.3f}".format(np.sqrt(np.diag(prop_hess)))
+                    print("cur_prop_value: {:.3f}".format(cur_prop))
+                    print("")
+                    print("prop_log_like: {:.3f}".format(prop_log_like))
+                    print("cur_log_like: {:.3f}".format(cur_log_like))
+                    print("log_like_diff: {:.3f}".format(log_like_diff))
+                    print("")
+                    print("log_prop_diff: {:.3f}".format(log_prop_diff))
+                    print("log_jacob_diff: {:.3f}".format(log_jacob_diff))
+                    print("")
+                    print("accept_prob: {:.3f}".format(accept_prob))
+                    print("")
 
             self.accept_prob[self.current_iter] = np.min((1.0, accept_prob))
 
