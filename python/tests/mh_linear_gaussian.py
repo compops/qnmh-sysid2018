@@ -6,7 +6,9 @@ from parameter.mcmc.metropolis_hastings import MetropolisHastings
 from state.kalman_methods.standard import KalmanMethods
 from state.particle_methods.standard import ParticleMethods
 
-def run(filter_method='kalman', alg_type='mh0', plotting=True):
+def run(filter_method='kalman', alg_type='mh0', plotting=True, file_tag=None,
+        **kwargs):
+
     # System model
     sys_model = LinearGaussianModel()
     sys_model.params['mu'] = 0.20
@@ -26,12 +28,16 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
 
     # Kalman filter and smoother
     kf = KalmanMethods()
+    if kwargs:
+        kf.settings.update(kwargs)
 
     # Particle filter and smoother
     pf = ParticleMethods()
     pf.settings.update({'no_particles': 1000,
                         'fixed_lag': 10,
                         'verbose': False})
+    if kwargs:
+        pf.settings.update(kwargs)
 
     # Metropolis-Hastings
     # linear_gaussian_model_T1000_goodSNR
@@ -50,6 +56,8 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
                    'initial_params': (0.0, 0.1, 0.2),
                    'verbose': False
                    }
+    if kwargs:
+        mh_settings.update(kwargs)
     mh = MetropolisHastings(sys_model, alg_type, mh_settings)
 
     if filter_method is 'kalman':
@@ -73,7 +81,6 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
             mh.settings['step_size'] = 0.8
         else:
             raise NameError("Unknown alg_type (mh0/mh1/mh2/qmh).")
-        mh.settings['step_size'] = 0.5 * mh.settings['step_size']
         mh.run(pf)
     else:
         raise NameError("Unknown filter_method (kalman/particle).")
@@ -81,8 +88,14 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
     if plotting:
         mh.plot()
     else:
+        sim_name = 'test_linear_gaussian_' + alg_type + '_' + filter_method
+        if file_tag:
+            sim_name += '_' + file_tag
         mh.save_to_file(output_path='../results-tests',
-                        sim_name='test_linear_gaussian_' + alg_type + '_' + filter_method,
+                        sim_name=sim_name,
+                        sim_desc='...')
+        mh.save_to_file(output_path='../results-tests',
+                        sim_name=sim_name,
                         sim_desc='...')
 
 

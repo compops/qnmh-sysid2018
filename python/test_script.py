@@ -9,14 +9,20 @@
 
 import tests.mh_linear_gaussian as mh
 mh.run(filter_method='kalman', alg_type='mh0', plotting=False)
-# mh.run(filter_method='particle', alg_type='mh0', plotting=False)
-# mh.run(filter_method='kalman', alg_type='mh1', plotting=False)
-# mh.run(filter_method='particle', alg_type='mh1', plotting=False)
-# mh.run(filter_method='kalman', alg_type='mh2', plotting=False)
-# mh.run(filter_method='particle', alg_type='mh2', plotting=False)
+mh.run(filter_method='particle', alg_type='mh0', plotting=False)
+mh.run(filter_method='kalman', alg_type='mh1', plotting=False)
+mh.run(filter_method='particle', alg_type='mh1', plotting=False)
+mh.run(filter_method='kalman', alg_type='mh2', plotting=False)
+mh.run(filter_method='particle', alg_type='mh2', plotting=False)
 
-# import tests.qmh_linear_gaussian as qmh
-# qmh.run(filter_method='kalman', alg_type='bfgs', plotting=False)
-# qmh.run(filter_method='kalman', alg_type='sr1', plotting=False)
-# qmh.run(filter_method='particle', alg_type='bfgs', plotting=False)
-# qmh.run(filter_method='particle', alg_type='sr1', plotting=False)
+import tests.qmh_linear_gaussian as qmh
+qmh.run(filter_method='kalman', alg_type='bfgs', plotting=False)
+qmh.run(filter_method='kalman', alg_type='sr1', plotting=False)
+qmh.run(filter_method='particle', alg_type='bfgs', plotting=False)
+qmh.run(filter_method='particle', alg_type='sr1', plotting=False)
+qmh.run(filter_method='particle', alg_type='bfgs', plotting=False,
+        file_tag="useall", qn_only_accepted_info=False,
+        qn_memory_length=20)
+qmh.run(filter_method='particle', alg_type='sr1', plotting=False,
+        file_tag="useall", qn_only_accepted_info=False,
+        qn_memory_length=20)
