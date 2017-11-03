@@ -2,12 +2,12 @@
 # kalman_smoother.run()
 
 #import tests.pf_linear_gaussian as pf
-import tests.pf_stochastic_volatility as pf
-pf.run(cython_code=False, save_to_file=True)
+#import tests.pf_stochastic_volatility as pf
+#pf.run(cython_code=False, save_to_file=True)
 
 import tests.mh_linear_gaussian as mh_linear_gaussian
 # mh_linear_gaussian.run(filter_method='kalman', alg_type='mh0', plotting=False)
-# mh_linear_gaussian.run(filter_method='particle', alg_type='mh0', plotting=False)
+mh_linear_gaussian.run(filter_method='particle', alg_type='mh0', plotting=False)
 # mh_linear_gaussian.run(filter_method='kalman', alg_type='mh1', plotting=False)
 # mh_linear_gaussian.run(filter_method='particle', alg_type='mh1', plotting=False)
 # mh_linear_gaussian.run(filter_method='kalman', alg_type='mh2', plotting=False)

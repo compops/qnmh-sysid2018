@@ -57,7 +57,6 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True):
             mh.settings['step_size'] = 0.8
         else:
             raise NameError("Unknown alg_type (mh0/mh1/mh2/qmh).")
-        mh.settings['step_size'] = mh.settings['step_size'] * 0.10
         mh.run(pf)
     else:
         raise NameError("Unknown filter_method (kalman/particle).")
