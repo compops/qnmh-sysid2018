@@ -97,6 +97,3 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True, file_tag=None,
         mh.save_to_file(output_path='../results-tests',
                         sim_name=sim_name,
                         sim_desc='...')
-
-
-    print(np.cov(mh.params[500:2500,:], rowvar=False))

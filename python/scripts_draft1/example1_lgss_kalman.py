@@ -5,16 +5,27 @@ import scripts_draft1.helper_linear_gaussian as mh
 
 def main(seed_offset=0):
     """Runs the experiment."""
+
+    # linear_gaussian_model_T1000_goodSNR
+    # hessian_estimate = np.array([[0.0049,  0.0006,  0.0002 ],
+    #                              [0.0006,  0.0013,  0.0002],
+    #                              [0.0002,  0.0002,  0.0005 ]])
+
+    # linear_gaussian_model_T1000_midSNR
+    hessian_estimate = np.array([[  3.17e-03,  -2.65e-05,   5.843e-05],
+                                 [ -2.65e-05,   1.01e-03,  -1.60e-04],
+                                 [  5.84e-05,  -1.60e-04,   7.80e-04]])
+
+
     kf_settings = {'initial_state': 0.0,
                    'initial_cov': 1e-5,
-                   'estimate_gradient': True,
-                   'estimate_hessian': True
+                   'estimate_gradient': True
                    }
 
-    mh_settings = {'no_iters': 10000,
-                   'no_burnin_iters': 3000,
-                   'step_size': 1.0,
-                   'base_hessian': np.eye(3) * 0.05**2,
+    mh_settings = {'no_iters': 20,
+                   'no_burnin_iters': 10,
+                   'step_size': 0.8,
+                   'base_hessian': hessian_estimate,
                    'initial_params': (0.0, 0.1, 0.2),
                    'verbose': False,
                    'verbose_wait_enter': False,
@@ -34,11 +45,21 @@ def main(seed_offset=0):
                    'qn_only_accepted_info': True
                    }
 
-    sim_name = 'example1_mh2_' + str(seed_offset)
-    mh.run('mh2',
+    sim_name = 'example1_mh1pre_' + str(seed_offset)
+    mh.run(mh_settings=mh_settings,
            kf_settings=kf_settings,
            pf_settings=None,
-           mh_settings=mh_settings,
+           filter_method='kalman',
+           alg_type='mh1',
+           sim_name=sim_name,
+           seed_offset=seed_offset)
+
+    sim_name = 'example1_mh2sw_' + str(seed_offset)
+    mh.run(mh_settings=mh_settings,
+           kf_settings=kf_settings,
+           pf_settings=None,
+           filter_method='kalman',
+           alg_type='mh2',
            sim_name=sim_name,
            seed_offset=seed_offset)
 
@@ -48,12 +69,12 @@ def main(seed_offset=0):
                 'Hessian such that the gradient gives a step of 0.01. Non-PD ',
                 'estimates are replaced with an empirical approximation of the ',
                 'Hessian.')
-    mh.run('mh2',
+    mh.run(mh_settings=mh_settings,
            kf_settings=kf_settings,
            pf_settings=None,
-           mh_settings=mh_settings,
+           filter_method='kalman',
+           alg_type='qmh',
            sim_name=sim_name,
-           sim_desc=sim_desc,
            seed_offset=seed_offset)
 
     mh_settings.update({'qn_strategy': 'sr1',
@@ -62,12 +83,12 @@ def main(seed_offset=0):
     sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
                 'such that the gradient gives a step of 0.01. Non-PD estimates ',
                 'are corrected by flipping negative eigenvalues.')
-    mh.run('mh2',
+     mh.run(mh_settings=mh_settings,
            kf_settings=kf_settings,
            pf_settings=None,
-           mh_settings=mh_settings,
+           filter_method='kalman',
+           alg_type='qmh',
            sim_name=sim_name,
-           sim_desc=sim_desc,
            seed_offset=seed_offset)
 
     mh_settings.update({'qn_strategy': 'sr1',
@@ -76,12 +97,57 @@ def main(seed_offset=0):
     sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
                 'such that the gradient gives a step of 0.01. Non-PD estimates ',
                 'are replaced with an empirical approximation of the Hessian.')
-    mh.run('mh2',
+    mh.run(mh_settings=mh_settings,
            kf_settings=kf_settings,
            pf_settings=None,
-           mh_settings=mh_settings,
+           filter_method='kalman',
+           alg_type='qmh',
            sim_name=sim_name,
-           sim_desc=sim_desc,
+           seed_offset=seed_offset)
+
+    mh_settings.update({'qn_strategy': 'bfgs',
+                        'qn_only_accepted_info': False})
+    sim_name = 'example1_mh_bfgs_' + str(seed_offset) + '_allinfo'
+    sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
+                'Hessian such that the gradient gives a step of 0.01. Non-PD ',
+                'estimates are replaced with an empirical approximation of the ',
+                'Hessian.')
+    mh.run(mh_settings=mh_settings,
+           kf_settings=kf_settings,
+           pf_settings=None,
+           filter_method='kalman',
+           alg_type='qmh',
+           sim_name=sim_name,
+           seed_offset=seed_offset)
+
+    mh_settings.update({'qn_strategy': 'sr1',
+                        'hessian_correction': 'flip',
+                        'qn_only_accepted_info': False})
+    sim_name = 'example1_mh_sr1_flip_' + str(seed_offset) + '_allinfo'
+    sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
+                'such that the gradient gives a step of 0.01. Non-PD estimates ',
+                'are corrected by flipping negative eigenvalues.')
+     mh.run(mh_settings=mh_settings,
+           kf_settings=kf_settings,
+           pf_settings=None,
+           filter_method='kalman',
+           alg_type='qmh',
+           sim_name=sim_name,
+           seed_offset=seed_offset)
+
+    mh_settings.update({'qn_strategy': 'sr1',
+                        'hessian_correction': 'replace',
+                        'qn_only_accepted_info': False})
+    sim_name = 'example1_mh_sr1_hyb_' + str(seed_offset) + '_allinfo'
+    sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
+                'such that the gradient gives a step of 0.01. Non-PD estimates ',
+                'are replaced with an empirical approximation of the Hessian.')
+    mh.run(mh_settings=mh_settings,
+           kf_settings=kf_settings,
+           pf_settings=None,
+           filter_method='kalman',
+           alg_type='qmh',
+           sim_name=sim_name,
            seed_offset=seed_offset)
 
     return None
