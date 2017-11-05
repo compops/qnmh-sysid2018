@@ -83,7 +83,8 @@ def main(seed_offset=0):
     sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
                 'such that the gradient gives a step of 0.01. Non-PD estimates ',
                 'are corrected by flipping negative eigenvalues.')
-     mh.run(mh_settings=mh_settings,
+
+    mh.run(mh_settings=mh_settings,
            kf_settings=kf_settings,
            pf_settings=None,
            filter_method='kalman',
@@ -127,7 +128,7 @@ def main(seed_offset=0):
     sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
                 'such that the gradient gives a step of 0.01. Non-PD estimates ',
                 'are corrected by flipping negative eigenvalues.')
-     mh.run(mh_settings=mh_settings,
+    mh.run(mh_settings=mh_settings,
            kf_settings=kf_settings,
            pf_settings=None,
            filter_method='kalman',

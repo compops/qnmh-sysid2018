@@ -1,8 +1,7 @@
-setwd("~/inc-tf/results-tests")
+setwd("~/src/qmh-sysid2018/results-tests")
 library("jsonlite")
 source("helper_plotting.R")
 
-dir
 algorithms <- list.dirs(full.names = FALSE)[-1]
 
 offset <- c(0)
