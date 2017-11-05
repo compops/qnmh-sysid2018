@@ -47,6 +47,7 @@ def main(seed_offset=0):
                    'qn_only_accepted_info': True
                    }
 
+    mh_settings.update({'step_size': 0.1})
     sim_name = 'example2_mh1pre_' + str(seed_offset)
     mh.run(mh_settings=mh_settings,
            kf_settings=None,
@@ -56,6 +57,7 @@ def main(seed_offset=0):
            sim_name=sim_name,
            seed_offset=seed_offset)
 
+    mh_settings.update({'step_size': 0.5})
     sim_name = 'example2_mh2sw_' + str(seed_offset)
     mh.run(mh_settings=mh_settings,
            kf_settings=None,

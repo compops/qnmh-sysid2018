@@ -26,7 +26,7 @@ def main(seed_offset=0):
                    'step_size': 0.8,
                    'base_hessian': hessian_estimate,
                    'initial_params': (0.0, 0.1, 0.2),
-                   'verbose': False,
+                   'verbose': True,
                    'verbose_wait_enter': False,
                    'trust_region_size': None,
                    'hessian_estimate': None,
@@ -44,6 +44,7 @@ def main(seed_offset=0):
                    'qn_only_accepted_info': True
                    }
 
+    mh_settings.update({'step_size': 0.1})
     sim_name = 'example1_mh1pre_' + str(seed_offset)
     mh.run(mh_settings=mh_settings,
            kf_settings=kf_settings,
@@ -53,6 +54,7 @@ def main(seed_offset=0):
            sim_name=sim_name,
            seed_offset=seed_offset)
 
+    mh_settings.update({'step_size': 0.8})
     sim_name = 'example1_mh2sw_' + str(seed_offset)
     mh.run(mh_settings=mh_settings,
            kf_settings=kf_settings,
