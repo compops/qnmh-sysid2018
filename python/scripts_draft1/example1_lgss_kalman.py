@@ -21,8 +21,8 @@ def main(seed_offset=0):
                    'estimate_gradient': True
                    }
 
-    mh_settings = {'no_iters': 20,
-                   'no_burnin_iters': 10,
+    mh_settings = {'no_iters': 5000,
+                   'no_burnin_iters': 1000,
                    'step_size': 0.8,
                    'base_hessian': hessian_estimate,
                    'initial_params': (0.0, 0.1, 0.2),

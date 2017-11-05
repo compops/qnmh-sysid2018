@@ -1,4 +1,4 @@
-setwd("~/src/qmh-sysid2018/results-tests")
+setwd("~/src/qnmh-sysid2018/results-tests")
 library("jsonlite")
 source("helper_plotting.R")
 

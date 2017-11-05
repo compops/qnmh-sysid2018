@@ -27,19 +27,13 @@ def run(mh_settings, kf_settings=None, pf_settings=None, filter_method='kalman',
     print(sys_model)
 
     # Kalman filter and smoother
-    kf = KalmanMethods()
-    if kf_settings:
-        kf.settings.update(kf_settings)
+    kf = KalmanMethods(kf_settings)
 
     # Particle filter and smoother
-    pf = ParticleMethods()
-    if pf_settings:
-        pf.settings.update(pf_settings)
+    pf = ParticleMethods(pf_settings)
 
     # Metropolis-Hastings
-    mh = MetropolisHastings(sys_model, alg_type)
-    if mh_settings:
-        mh.settings.update(mh_settings)
+    mh = MetropolisHastings(sys_model, alg_type, mh_settings)
 
     if filter_method is 'kalman':
         mh.run(kf)
