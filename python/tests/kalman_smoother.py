@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pylab as plt
 
 from models.linear_gaussian_model import LinearGaussianModel
-from state.kalman_methods.main import KalmanMethods
+from state.kalman_methods.standard import KalmanMethods
+from state.kalman_methods.cython import KalmanMethodsCython
 
-def run():
+def run(cython_code=False):
     # System model
     sys_model = LinearGaussianModel()
     sys_model.params['mu'] = 0.20
@@ -28,7 +29,11 @@ def run():
                        'estimate_gradient': True,
                        'estimate_hessian': True
                       }
-    kf = KalmanMethods(kalman_settings)
+
+    if cython_code:
+        kf = KalmanMethodsCython(kalman_settings)
+    else:
+        kf = KalmanMethods(kalman_settings)
     kf.smoother(sys_model)
 
     plt.subplot(311)
@@ -37,20 +42,20 @@ def run():
     plt.xlabel("time")
 
     plt.subplot(312)
-    plt.plot(np.arange(sys_model.no_obs+1), kf.filt_state_est - sys_model.states[:, 0])
+    plt.plot(np.arange(sys_model.no_obs+1), kf.results['filt_state_est'][:, 0] - sys_model.states[:, 0])
     plt.ylabel("error in filtered state estimate")
     plt.xlabel("time")
     plt.title('State estimation')
 
     plt.subplot(313)
-    plt.plot(np.arange(sys_model.no_obs+1), kf.smo_state_est[:, 0] - sys_model.states[:, 0])
+    plt.plot(np.arange(sys_model.no_obs+1), kf.results['smo_state_est'][:, 0] - sys_model.states[:, 0])
     plt.ylabel("error in smoothed state estimate")
     plt.xlabel("time")
     plt.title('State estimation')
     plt.show()
 
-    print("MSE of filter: " + str(np.mean((kf.filt_state_est - sys_model.states[:, 0])**2)))
-    print("MSE of smoother: " + str(np.mean((kf.smo_state_est[:, 0] - sys_model.states[:, 0])**2)))
+    print("MSE of filter: " + str(np.mean((kf.results['filt_state_est'][:, 0] - sys_model.states[:, 0])**2)))
+    print("MSE of smoother: " + str(np.mean((kf.results['smo_state_est'][:, 0] - sys_model.states[:, 0])**2)))
 
     # Mu
     sys_model.create_inference_model(params_to_estimate = ('mu'))
@@ -62,10 +67,10 @@ def run():
 
     for i in range(len(grid_mu)):
         sys_model.store_params(grid_mu[i])
-        log_like_mu[i] = kf.log_like
+        log_like_mu[i] = kf.results['log_like']
         kf.smoother(sys_model)
-        gradient_mu[i] = kf.gradient_internal
-        natural_gradient_mu[i] = kf.gradient_internal / kf.hessian_internal
+        gradient_mu[i] = kf.results['gradient_internal'].flatten()
+        natural_gradient_mu[i] = kf.results['gradient_internal'].flatten() / kf.results['hessian_internal'].flatten()
         gradient_mu[i] /= (1.0 - sys_model.params['phi'])
 
     # Phi
@@ -79,9 +84,9 @@ def run():
     for i in range(len(grid_phi)):
         sys_model.store_params(grid_phi[i])
         kf.smoother(sys_model)
-        log_like_phi[i] = kf.log_like
-        gradient_phi[i] = kf.gradient_internal
-        natural_gradient_phi[i] = kf.gradient_internal / kf.hessian_internal
+        log_like_phi[i] = kf.results['log_like']
+        gradient_phi[i] = kf.results['gradient_internal'].flatten()
+        natural_gradient_phi[i] = kf.results['gradient_internal'].flatten() / kf.results['hessian_internal'].flatten()
         gradient_phi[i] /= (1.0 - sys_model.params['phi']**2)
 
     # Sigma_v
@@ -95,9 +100,9 @@ def run():
     for i in range(len(grid_sigmav)):
         sys_model.store_params(grid_sigmav[i])
         kf.smoother(sys_model)
-        log_like_sigmav[i] = kf.log_like
-        gradient_sigmav[i] = kf.gradient_internal
-        natural_gradient_sigmav[i] = kf.gradient_internal / kf.hessian_internal
+        log_like_sigmav[i] = kf.results['log_like']
+        gradient_sigmav[i] = kf.results['gradient_internal'].flatten()
+        natural_gradient_sigmav[i] = kf.results['gradient_internal'].flatten() / kf.results['hessian_internal'].flatten()
         gradient_sigmav[i] /= grid_sigmav[i]
 
 

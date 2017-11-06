@@ -142,7 +142,8 @@ class MetropolisHastings(BaseParameterInference):
                          'qn_initial_hessian': 'fixed',
                          'qn_initial_hessian_scaling': 0.10,
                          'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
-                         'qn_only_accepted_info': True
+                         'qn_only_accepted_info': True,
+                         'qn_accept_all_initial': True
                         }
 
 
@@ -354,8 +355,9 @@ class MetropolisHastings(BaseParameterInference):
                 perturbation = np.random.multivariate_normal(np.zeros(no_param),
                                                              cur_hess)
             except RuntimeWarning:
-                print("Warning raised in np.random.multivariate_normal " +
-                      "so using Cholesky to generate random variables.")
+                if self.settings['verbose']:
+                    print("Warning raised in np.random.multivariate_normal " +
+                        "so using Cholesky to generate random variables.")
                 cur_hess_root = np.linalg.cholesky(cur_hess)
                 perturbation = np.random.multivariate_normal(np.zeros(no_param),
                                                              np.eye(no_param))

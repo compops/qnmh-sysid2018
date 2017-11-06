@@ -16,12 +16,12 @@ def run(cython_code=False, save_to_file=False):
     sys_model.params['mu'] = 0.2
     sys_model.params['phi'] = 0.5
     sys_model.params['sigma_v'] = 1.0
-    sys_model.params['sigma_e'] = 0.2
+    sys_model.params['sigma_e'] = 0.4
     sys_model.no_obs = 1000
     sys_model.initial_state = 0.0
-    sys_model.generate_data()
+    #sys_model.generate_data()
     #sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
-    #sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
+    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
 
     # Inference model
     sys_model.fix_true_params()
@@ -56,17 +56,17 @@ def run(cython_code=False, save_to_file=False):
         plt.ylabel("states")
         plt.xlabel("time")
         plt.subplot(312)
-        plt.plot(np.arange(sys_model.no_obs+1), pf.results['filt_state_est'][:, 0] - sys_model.states[:, 0])
-        plt.ylabel("error in filtered state estimate")
+        plt.plot(np.arange(sys_model.no_obs+1), np.abs(pf.results['filt_state_est'][:, 0] - sys_model.states[:, 0]))
+        plt.ylabel("abs error in filtered state estimate")
         plt.xlabel("time")
         plt.title('State estimation')
         plt.subplot(313)
-        plt.plot(np.arange(sys_model.no_obs+1), pf.results['smo_state_est'][:, 0] - sys_model.states[:, 0])
-        plt.ylabel("error in smoothed state estimate")
+        plt.plot(np.arange(sys_model.no_obs+1), np.abs(pf.results['smo_state_est'][:, 0] - sys_model.states[:, 0]))
+        plt.ylabel("abs error in smoothed state estimate")
         plt.xlabel("time")
         plt.title('State estimation')
         plt.show()
-
+    return None
     if save_to_file:
         no_reps = 100
     else:

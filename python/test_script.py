@@ -1,8 +1,8 @@
-# import tests.kalman_smoother as kalman_smoother
-# kalman_smoother.run()
+import tests.kalman_smoother as kalman_smoother
+kalman_smoother.run(cython_code=True)
 
-import tests.pf_linear_gaussian as pf
-pf.run(cython_code=False, save_to_file=False)
+#import tests.pf_linear_gaussian as pf
+#pf.run(cython_code=False, save_to_file=False)
 
 # import tests.pf_stochastic_volatility as pf
 # pf.run(cython_code=False, save_to_file=True)

@@ -1,7 +1,6 @@
 """Particle methods."""
 import numpy as np
 from state.particle_methods.cython_helper import bpf_lgss, flps_lgss
-#from state.particle_methods.cython_helper import flps_lgss
 from state.base_state_inference import BaseStateInference
 
 class ParticleMethodsCythonLGSS(BaseStateInference):
