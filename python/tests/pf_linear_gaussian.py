@@ -13,9 +13,9 @@ def run(cython_code=False, save_to_file=False):
           "state space model.")
     # System model
     sys_model = LinearGaussianModel()
-    sys_model.params['mu'] = 0.20
-    sys_model.params['phi'] = 0.50
-    sys_model.params['sigma_v'] = 1.00
+    sys_model.params['mu'] = 0.2
+    sys_model.params['phi'] = 0.5
+    sys_model.params['sigma_v'] = 1.0
     sys_model.params['sigma_e'] = 0.2
     sys_model.no_obs = 1000
     sys_model.initial_state = 0.0
@@ -47,7 +47,7 @@ def run(cython_code=False, save_to_file=False):
     print("Run time of smoother:.")
     print("--- %s seconds ---" % (time.time() - start_time))
 
-    print("MSE of filter: " + str(np.mean((pf.results['filt_state_est'] - sys_model.states[:, 0])**2)))
+    print("MSE of filter: " + str(np.mean((pf.results['filt_state_est'][:, 0] - sys_model.states[:, 0])**2)))
     print("MSE of smoother: " + str(np.mean((pf.results['smo_state_est'][:, 0] - sys_model.states[:, 0])**2)))
 
     if not save_to_file:

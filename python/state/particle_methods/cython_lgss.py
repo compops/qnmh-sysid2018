@@ -44,7 +44,9 @@ class ParticleMethodsCythonLGSS(BaseStateInference):
         #                 particles=self.results['particles'],
         #                 weights=self.results['weights'])
         # self._estimate_gradient_and_hessian(model)
-        self.results.update({'filt_state_est': np.array(xhatf).reshape((model.no_obs+1, 1)), 'log_like': ll})
-        self.results.update({'smo_state_est': np.array(xhats).reshape((model.no_obs+1, 1)),
-                             'gradient_internal': np.array(0.0),
-                             'hessian_internal': np.array(1.0)})
+
+        self.results.update({'filt_state_est': np.array(xhatf).reshape((model.no_obs+1, 1))})
+        self.results.update({'log_like': ll})
+        self.results.update({'smo_state_est': np.array(xhats).reshape((model.no_obs+1, 1))})
+        self.results.update({'gradient_internal': np.array(0.0)})
+        self.results.update({'hessian_internal': np.array(1.0)})
