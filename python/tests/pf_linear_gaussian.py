@@ -46,7 +46,9 @@ def run(cython_code=False, save_to_file=False):
         pf.smoother(sys_model)
     print("Run time of smoother:.")
     print("--- %s seconds ---" % (time.time() - start_time))
-    print(pf.results['log_like'])
+
+    print("MSE of filter: " + str(np.mean((pf.results['filt_state_est'] - sys_model.states[:, 0])**2)))
+    print("MSE of smoother: " + str(np.mean((pf.results['smo_state_est'][:, 0] - sys_model.states[:, 0])**2)))
 
     if not save_to_file:
         plt.subplot(311)
@@ -64,9 +66,6 @@ def run(cython_code=False, save_to_file=False):
         plt.xlabel("time")
         plt.title('State estimation')
         plt.show()
-
-        print("MSE of filter: " + str(np.mean((pf.results['filt_state_est'] - sys_model.states[:, 0])**2)))
-        print("MSE of smoother: " + str(np.mean((pf.results['smo_state_est'][:, 0] - sys_model.states[:, 0])**2)))
 
     if save_to_file:
         no_reps = 100
