@@ -8,7 +8,7 @@ from libc.float cimport FLT_MAX
 from libc.stdlib cimport malloc, free
 
 DEF FixedLag = 10
-DEF NoParticles = 1000
+DEF NoParticles = 500
 DEF NoObs = 1001
 DEF PI = 3.1415
 
@@ -89,11 +89,9 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     # Initialise variables
     cdef int[NoParticles] ancestors
     cdef int[FixedLag][NoParticles] ancestry
-
-    cdef int **ancestry = malloc (FixedLag * sizeof(int *) + (FixedLag * (NoParticles * sizeof(int)));
-    cdef int **old_ancestry = malloc (FixedLag * sizeof(int *) + (FixedLag * (NoParticles * sizeof(int)));
-    #cdef int[FixedLag][NoParticles] old_ancestry
-    cdef double[NoObs][NoParticles] particles
+    cdef int[FixedLag][NoParticles] old_ancestry
+    cdef double *particles = <double *>malloc(NoObs * NoParticles * sizeof(double))
+    #cdef double[NoObs][NoParticles] particles
     cdef double[NoObs][NoParticles] weights
     cdef double[NoObs] filt_state_est
     cdef double[NoObs] smo_state_est
@@ -117,15 +115,6 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     cdef int k
 
     # Initialize ancestry
-    cdef int *offs = &ancestry[FixedLag]; /*  same as int *offs = array + nrows; */
-    for (i = 0; i < FixedLag; i++, offs += NoParticles) {
-        ancestry[i] = offs;
-    }
-    cdef int *offs = &old_ancestry[FixedLag]; /*  same as int *offs = array + nrows; */
-    for (i = 0; i < FixedLag; i++, offs += NoParticles) {
-        ancestry[i] = offs;
-    }
-
     for k in range(FixedLag):
         for j in range(NoParticles):
             ancestry[k][j] = 0
@@ -133,13 +122,13 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     # Generate initial state
     stDev = sigmav / sqrt(1.0 - (phi * phi))
     for j in range(NoParticles):
-        particles[0][j] = mu + stDev * random_gaussian()
+        particles[0 + j * NoObs] = mu + stDev * random_gaussian()
         weights[0][j] = 1.0 / NoParticles
         ancestry[0][j] = j
 
         filt_state_est[0] = 0.0
         for j in range(NoParticles):
-            filt_state_est[0] += weights[0][j] * particles[0][j]
+            filt_state_est[0] += weights[0][j] * particles[0 + j * NoObs]
 
     for i in range(1, NoObs):
         current_lag = my_min(i, FixedLag)
@@ -160,12 +149,12 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
 
         # Propagate particles
         for j in range(NoParticles):
-            mean = mu + phi * (particles[i-1][ancestors[j]] - mu)
-            particles[i][j] = mean + sigmav * random_gaussian()
+            mean = mu + phi * (particles[i - 1 + ancestors[j] * NoObs] - mu)
+            particles[i + j * NoObs] = mean + sigmav * random_gaussian()
 
         # Weight particles
         for j in range(NoParticles):
-            unnorm_weights[j] = norm_logpdf(obs[i], particles[i][j], sigmae)
+            unnorm_weights[j] = norm_logpdf(obs[i], particles[i + j * NoObs], sigmae)
 
         max_weight = my_max(unnorm_weights)
         norm_factor = 0.0
@@ -179,15 +168,15 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
         filt_state_est[i] = 0.0
         for j in range(NoParticles):
             weights[i][j] = shifted_weights[j] / norm_factor
-            if isfinite(weights[i][j] * particles[i][j]) != 0:
-                filt_state_est[i] += weights[i][j] * particles[i][j]
+            if isfinite(weights[i][j] * particles[i + j * NoObs]) != 0:
+                filt_state_est[i] += weights[i][j] * particles[i + j * NoObs]
 
         # Compute smoothed state
         if i >= FixedLag:
             filt_state_est[i-FixedLag] = 0.0
             for j in range(NoParticles):
                 idx = ancestry[FixedLag-1][j]
-                smo_state_est[i-FixedLag] += weights[i][j] * particles[i-FixedLag][idx]
+                smo_state_est[i-FixedLag] += weights[i][j] * particles[i - FixedLag + idx * NoObs]
 
         # Estimate log-likelihood
         log_like += max_weight + log(norm_factor) - log(NoParticles)
@@ -196,7 +185,9 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
         smo_state_est[i] = 0.0
         for j in range(NoParticles):
             idx = ancestry[NoObs-i-1][j]
-            smo_state_est[i] += weights[NoObs-1][j] * particles[i][idx]
+            smo_state_est[i] += weights[NoObs-1][j] * particles[i + idx * NoObs]
+
+    free(particles)
 
     # Compile the rest of the output
     return filt_state_est, smo_state_est, log_like
