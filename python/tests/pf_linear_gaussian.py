@@ -3,24 +3,25 @@ import numpy as np
 import matplotlib.pylab as plt
 import time
 
-from models.linear_gaussian_model import LinearGaussian
-from state.particle_methods.main import ParticleMethods
+from models.linear_gaussian_model import LinearGaussianModel
+from state.particle_methods.standard import ParticleMethods
+from state.particle_methods.cython_lgss import ParticleMethodsCythonLGSS
 
 def run(cython_code=False, save_to_file=False):
 
     print("Running test script for particle smoother on the linear Gaussian " +
           "state space model.")
     # System model
-    sys_model = LinearGaussian()
+    sys_model = LinearGaussianModel()
     sys_model.params['mu'] = 0.20
     sys_model.params['phi'] = 0.50
     sys_model.params['sigma_v'] = 1.00
-    sys_model.params['sigma_e'] = 0.40
+    sys_model.params['sigma_e'] = 0.2
     sys_model.no_obs = 1000
     sys_model.initial_state = 0.0
-
+    sys_model.generate_data()
     #sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
-    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
+    #sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
 
     # Inference model
     sys_model.fix_true_params()
@@ -28,14 +29,15 @@ def run(cython_code=False, save_to_file=False):
 
     # Kalman filter and smoother
     particle_settings = {'resampling_method': 'systematic',
-                         'no_particles': 500,
+                         'no_particles': 2000,
                          'estimate_gradient': True,
                          'fixed_lag': 10,
                          'estimate_hessian': True,
                          'generate_initial_state': True,
                          'initial_state': 0.0
                         }
-    pf = ParticleMethods(particle_settings)
+    #pf = ParticleMethods(particle_settings)
+    pf = ParticleMethodsCythonLGSS(particle_settings)
 
     start_time = time.time()
     if cython_code:
@@ -44,6 +46,7 @@ def run(cython_code=False, save_to_file=False):
         pf.smoother(sys_model)
     print("Run time of smoother:.")
     print("--- %s seconds ---" % (time.time() - start_time))
+    print(pf.results['log_like'])
 
     if not save_to_file:
         plt.subplot(311)
@@ -66,21 +69,32 @@ def run(cython_code=False, save_to_file=False):
         print("MSE of smoother: " + str(np.mean((pf.results['smo_state_est'][:, 0] - sys_model.states[:, 0])**2)))
 
     if save_to_file:
-        repetitions = 100
+        no_reps = 100
     else:
-        repetitions = 1
+        no_reps = 1
+
+    if save_to_file:
+        print("Running particle filter to estimate StDev of log-like estimator")
+        log_like_ests = np.zeros(no_reps)
+        for i in range(no_reps):
+            pf.filter(sys_model)
+            log_like_ests[i] = pf.results['log_like']
+            print("Iteration {}/{}".format(i, no_reps))
+        print("Mean of log-likelihood estimate: {}".format(np.mean(log_like_ests)))
+        print("StDev of log-likelihood estimate: {}".format(np.sqrt(np.var(log_like_ests))))
+
 
     # Mu
     sys_model.create_inference_model(params_to_estimate = ('mu'))
 
-    grid_mu = np.arange(-0.95, 1, 0.05)
-    log_like_mu = np.zeros((len(grid_mu), repetitions))
-    gradient_mu = np.zeros((len(grid_mu), repetitions))
-    nat_gradient_mu = np.zeros((len(grid_mu), repetitions))
+    grid_mu = np.arange(-0.95, 1, 0.10)
+    log_like_mu = np.zeros((len(grid_mu), no_reps))
+    gradient_mu = np.zeros((len(grid_mu), no_reps))
+    nat_gradient_mu = np.zeros((len(grid_mu), no_reps))
 
     print("Running particle smoother over grid for mu...")
     for i in range(len(grid_mu)):
-        for j in range(repetitions):
+        for j in range(no_reps):
             sys_model.store_params(grid_mu[i])
             if cython_code:
                 pf.flps_lgss_cython(sys_model)
@@ -92,19 +106,20 @@ def run(cython_code=False, save_to_file=False):
             nat_gradient_mu[i, j] = pf.results['gradient_internal'].flatten()
             nat_gradient_mu[i, j] /=  pf.results['hessian_internal'].flatten()
             print("Grid point: {}/{} and iteration {}/{}".format(i,
-                  len(grid_mu), j, repetitions))
+                  len(grid_mu), j, no_reps))
+
 
     # Phi
     sys_model.create_inference_model(params_to_estimate = ('phi'))
 
     grid_phi = np.arange(-0.9, 1, 0.1)
-    log_like_phi = np.zeros((len(grid_phi), repetitions))
-    gradient_phi = np.zeros((len(grid_phi), repetitions))
-    nat_gradient_phi = np.zeros((len(grid_phi), repetitions))
+    log_like_phi = np.zeros((len(grid_phi), no_reps))
+    gradient_phi = np.zeros((len(grid_phi), no_reps))
+    nat_gradient_phi = np.zeros((len(grid_phi), no_reps))
 
     print("Running particle smoother over grid for phi...")
     for i in range(len(grid_phi)):
-        for j in range(repetitions):
+        for j in range(no_reps):
             sys_model.store_params(grid_phi[i])
             if cython_code:
                 pf.flps_lgss_cython(sys_model)
@@ -116,19 +131,19 @@ def run(cython_code=False, save_to_file=False):
             nat_gradient_phi[i, j] = pf.results['gradient_internal'].flatten()
             nat_gradient_phi[i, j] /= pf.results['hessian_internal'].flatten()
             print("Grid point: {}/{} and iteration {}/{}".format(i,
-                  len(grid_phi), j, repetitions))
+                  len(grid_phi), j, no_reps))
 
     # Sigma_v
     sys_model.create_inference_model(params_to_estimate = ('sigma_v'))
 
     grid_sigmav = np.arange(0.5, 2, 0.1)
-    log_like_sigmav = np.zeros((len(grid_sigmav), repetitions))
-    gradient_sigmav = np.zeros((len(grid_sigmav), repetitions))
-    nat_gradient_sigmav = np.zeros((len(grid_sigmav), repetitions))
+    log_like_sigmav = np.zeros((len(grid_sigmav), no_reps))
+    gradient_sigmav = np.zeros((len(grid_sigmav), no_reps))
+    nat_gradient_sigmav = np.zeros((len(grid_sigmav), no_reps))
 
     print("Running particle smoother over grid for sigmav...")
     for i in range(len(grid_sigmav)):
-        for j in range(repetitions):
+        for j in range(no_reps):
             sys_model.store_params(grid_sigmav[i])
             if cython_code:
                 pf.flps_lgss_cython(sys_model)
@@ -140,7 +155,7 @@ def run(cython_code=False, save_to_file=False):
             nat_gradient_sigmav[i, j] = pf.results['gradient_internal'].flatten()
             nat_gradient_sigmav[i, j] /= pf.results['hessian_internal'].flatten()
             print("Grid point: {}/{} and iteration {}/{}".format(i,
-                  len(grid_sigmav), j, repetitions))
+                  len(grid_sigmav), j, no_reps))
 
 
     # Plotting

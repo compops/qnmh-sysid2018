@@ -430,8 +430,7 @@ class MetropolisHastings(BaseParameterInference):
                     accept_prob = np.exp(log_prior_diff + log_like_diff +
                                          log_prop_diff + log_jacob_diff)
                 except:
-                    if self.settings['verbose']:
-                        print("Accepted bu overflow occured.")
+                    print("Accepted as overflow occured...")
                     accept_prob = 1.0
 
                 if self.settings['trust_region_size']:
@@ -449,6 +448,11 @@ class MetropolisHastings(BaseParameterInference):
                 #print(prop_hess)
                 #print(np.linalg.eig(prop_hess)[0])
                 accept_prob = 0.0
+
+            # Initialisation for qMH (accept all initially proposed steps)
+            if self.settings['qn_accept_all_initial'] and \
+                    self.current_iter < self.settings['qn_memory_length']:
+                accept_prob = 1.0
 
             if self.settings['verbose']:
                 if is_valid_covariance_matrix(prop_hess):

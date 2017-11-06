@@ -1,160 +1,286 @@
-"""Bootstrap particle filter for linear Gaussian model"""
 from __future__ import absolute_import
 
-import numpy as np
-cimport numpy as np
+import cython
 
-DTYPE_int = np.int
-ctypedef np.int_t DTYPE_int_t
+from libc.stdlib cimport rand, RAND_MAX
+from libc.math cimport log, sqrt, exp, isfinite
+from libc.float cimport FLT_MAX
+from libc.stdlib cimport malloc, free
 
-DTYPE_float = np.float64
-ctypedef np.float64_t DTYPE_float_t
+DEF NoParticles = 2000
+DEF NoObs = 1001
+DEF PI = 3.1415
 
-from state.particle_methods.resampling import systematic
+@cython.cdivision(True)
+@cython.boundscheck(False)
+def bpf_lgss(double [:] obs, double mu, double phi, double sigmav, double sigmae):
 
-def bpf_lgss(np.ndarray[DTYPE_float_t, ndim=2] observations,
-             np.ndarray[DTYPE_float_t] params,
-             int no_particles):
-    """Boostrap particle filter for linear Gaussian model"""
+    # Initialise variables
+    cdef int[NoParticles] ancestors
+    cdef double[NoParticles] new_part
+    cdef double[NoParticles] old_part
+    cdef double[NoParticles] weights
+    cdef double[NoObs] filt_state_est
+    cdef double[NoParticles] unnorm_weights
+    cdef double[NoParticles] shifted_weights
+    cdef double log_like = 0.0
 
-    cdef float mu = params[0]
-    cdef float phi = params[1]
-    cdef float sigmav = params[2]
-    cdef float sigmae = params[3]
-    cdef int no_obs = len(observations)
+    # Define helpers
+    cdef double mean = 0.0
+    cdef double stDev = 0.0
+    cdef double max_weight = 0.0
+    cdef double norm_factor
+    cdef double foo_double
 
-    # Initalise variables
-    cdef np.ndarray[DTYPE_int_t, ndim=2] ancestors = np.zeros((no_particles, no_obs), dtype=DTYPE_int)
-    cdef np.ndarray[DTYPE_int_t, ndim=2] ancestors_resamp = np.zeros((no_particles, no_obs), dtype=DTYPE_int)
-    cdef np.ndarray[DTYPE_float_t, ndim=2] particles = np.zeros((no_particles, no_obs))
-    cdef np.ndarray[DTYPE_float_t, ndim=2] weights = np.zeros((no_particles, no_obs))
-    cdef np.ndarray[DTYPE_float_t, ndim=2] filt_state_est = np.zeros((no_obs, 1))
-    cdef np.ndarray[DTYPE_float_t] log_like = np.zeros(no_obs)
-    cdef np.ndarray[DTYPE_float_t] renorm_weight
-
-    cdef np.ndarray[DTYPE_float_t] mean
-    cdef np.ndarray[DTYPE_float_t] unnormalised_weights
-    cdef float max_weight
-    cdef float normalisation_factor
-    cdef np.ndarray[DTYPE_float_t] shifted_weights
-
-    cdef int particle_index
-    cdef np.ndarray[DTYPE_float_t, ndim=2] particle_traj
+    # Define counters
+    cdef int i
+    cdef int j
 
     # Generate or set initial state
-    noise_stdev = sigmav / np.sqrt(1.0 - phi**2)
-    particles[:, 0] = mu + noise_stdev * np.random.normal(size=no_particles)
-    weights[:, 0] = 1.0 / no_particles
+    stDev = sigmav / sqrt(1.0 - (phi * phi))
+    for j in range(NoParticles):
+        old_part[j] = mu + stDev * random_gaussian()
+        weights[j] = 1.0 / NoParticles
 
-    for i in range(1, no_obs):
+    for i in range(1, NoObs):
         # Resample particles
-        new_ancestors = systematic(weights[:, i-1]).astype(int)
-        ancestors_resamp[:, 0:(i-1)] = ancestors_resamp[new_ancestors, 0:(i-1)]
-        ancestors_resamp[:, i] = new_ancestors
-        ancestors[:, i] = new_ancestors
+        systematic(ancestors, weights)
 
         # Propagate particles
-        mean = mu + phi * (particles[new_ancestors, i-1] - mu)
-        particles[:, i] = mean + sigmav * np.random.normal(size=no_particles)
+        for j in range(NoParticles):
+            mean = mu + phi * (old_part[ancestors[j]] - mu)
+            new_part[j] = mean + sigmav * random_gaussian()
 
         # Weight particles
-        unnormalised_weights = norm_logpdf(observations[i],
-                                           mean=particles[:, i],
-                                           stdev=sigmae)
+        for j in range(NoParticles):
+            unnorm_weights[j] = norm_logpdf(obs[i], new_part[j], sigmae)
 
-        max_weight = np.max(unnormalised_weights)
-        shifted_weights = np.exp(unnormalised_weights - max_weight)
-        normalisation_factor = np.sum(shifted_weights)
-        weights[:, i] = shifted_weights / normalisation_factor
+        max_weight = my_max(unnorm_weights)
+        norm_factor = 0.0
+        for j in range(NoParticles):
+            shifted_weights[j] = exp(unnorm_weights[j] - max_weight)
+            foo_double = norm_factor + shifted_weights[j]
+            if isfinite(foo_double) != 0:
+                norm_factor = foo_double
+
+        # Normalise weights and compute state filtering estimate
+        filt_state_est[i] = 0.0
+        for j in range(NoParticles):
+            weights[j] = shifted_weights[j] / norm_factor
+            if isfinite(weights[j] * new_part[j]) != 0:
+                filt_state_est[i] += weights[j] * new_part[j]
 
         # Estimate log-likelihood
-        log_like[i] = max_weight
-        log_like[i] += np.log(normalisation_factor)
-        log_like[i] -= np.log(no_particles)
+        log_like += max_weight + log(norm_factor) - log(NoParticles)
 
-        # Estimate the filtered state
-        filt_state_est[i] = np.sum(weights[:, i] * particles[:, i])
-
-    # Sample a trajectory
-    renorm_weight = weights[:, no_obs-1] / np.sum(weights[:, no_obs-1])
-    particle_index = np.random.choice(no_particles, 1, p=renorm_weight)
-    particle_traj = particles[ancestors_resamp[particle_index, :], :]
+        # Set new to old
+        for j in range(NoParticles):
+            old_part[j] = new_part[j]
 
     # Compile the rest of the output
-    return {'filt_state_est': filt_state_est,
-            'log_like': np.sum(log_like),
-            'particle_traj': particle_traj,
-            'particles': particles,
-            'weights': weights,
-            'ancestors': ancestors,
-            'ancestors_resampled': ancestors_resamp
-           }
+    return filt_state_est, log_like
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+def bpf_lgss(double [:] obs, double mu, double phi, double sigmav, double sigmae):
+
+    # Initialise variables
+    cdef int[NoParticles] ancestors
+    cdef double[NoParticles] new_part
+    cdef double[NoParticles] old_part
+    cdef double[NoParticles] weights
+    cdef double[NoObs] filt_state_est
+    cdef double[NoParticles] unnorm_weights
+    cdef double[NoParticles] shifted_weights
+    cdef double log_like = 0.0
+
+    # Define helpers
+    cdef double mean = 0.0
+    cdef double stDev = 0.0
+    cdef double max_weight = 0.0
+    cdef double norm_factor
+    cdef double foo_double
+
+    # Define counters
+    cdef int i
+    cdef int j
+
+    # Generate or set initial state
+    stDev = sigmav / sqrt(1.0 - (phi * phi))
+    for j in range(NoParticles):
+        old_part[j] = mu + stDev * random_gaussian()
+        weights[j] = 1.0 / NoParticles
+
+    for i in range(1, NoObs):
+        # Resample particles
+        systematic(ancestors, weights)
+
+        # Propagate particles
+        for j in range(NoParticles):
+            mean = mu + phi * (old_part[ancestors[j]] - mu)
+            new_part[j] = mean + sigmav * random_gaussian()
+
+        # Weight particles
+        for j in range(NoParticles):
+            unnorm_weights[j] = norm_logpdf(obs[i], new_part[j], sigmae)
+
+        max_weight = my_max(unnorm_weights)
+        norm_factor = 0.0
+        for j in range(NoParticles):
+            shifted_weights[j] = exp(unnorm_weights[j] - max_weight)
+            foo_double = norm_factor + shifted_weights[j]
+            if isfinite(foo_double) != 0:
+                norm_factor = foo_double
+
+        # Normalise weights and compute state filtering estimate
+        filt_state_est[i] = 0.0
+        for j in range(NoParticles):
+            weights[j] = shifted_weights[j] / norm_factor
+            if isfinite(weights[j] * new_part[j]) != 0:
+                filt_state_est[i] += weights[j] * new_part[j]
+
+        # Estimate log-likelihood
+        log_like += max_weight + log(norm_factor) - log(NoParticles)
+
+        # Set new to old
+        for j in range(NoParticles):
+            old_part[j] = new_part[j]
+
+    # Compile the rest of the output
+    return filt_state_est, log_like
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigmae):
+
+    # Initialise variables
+    cdef int[NoParticles] ancestors
+    cdef double[NoParticles] new_part
+    cdef double[NoParticles] old_part
+    cdef double[NoParticles] weights
+    cdef double[NoObs] filt_state_est
+    cdef double[NoParticles] unnorm_weights
+    cdef double[NoParticles] shifted_weights
+    cdef double log_like = 0.0
+
+    # Define helpers
+    cdef double mean = 0.0
+    cdef double stDev = 0.0
+    cdef double max_weight = 0.0
+    cdef double norm_factor
+    cdef double foo_double
+
+    # Define counters
+    cdef int i
+    cdef int j
+
+    # Generate or set initial state
+    stDev = sigmav / sqrt(1.0 - (phi * phi))
+    for j in range(NoParticles):
+        old_part[j] = mu + stDev * random_gaussian()
+        weights[j] = 1.0 / NoParticles
+
+    for i in range(1, NoObs):
+        # Resample particles
+        systematic(ancestors, weights)
+
+        # Propagate particles
+        for j in range(NoParticles):
+            mean = mu + phi * (old_part[ancestors[j]] - mu)
+            new_part[j] = mean + sigmav * random_gaussian()
+
+        # Weight particles
+        for j in range(NoParticles):
+            unnorm_weights[j] = norm_logpdf(obs[i], new_part[j], sigmae)
+
+        max_weight = my_max(unnorm_weights)
+        norm_factor = 0.0
+        for j in range(NoParticles):
+            shifted_weights[j] = exp(unnorm_weights[j] - max_weight)
+            foo_double = norm_factor + shifted_weights[j]
+            if isfinite(foo_double) != 0:
+                norm_factor = foo_double
+
+        # Normalise weights and compute state filtering estimate
+        filt_state_est[i] = 0.0
+        for j in range(NoParticles):
+            weights[j] = shifted_weights[j] / norm_factor
+            if isfinite(weights[j] * new_part[j]) != 0:
+                filt_state_est[i] += weights[j] * new_part[j]
+
+        # Estimate log-likelihood
+        log_like += max_weight + log(norm_factor) - log(NoParticles)
+
+        # Set new to old
+        for j in range(NoParticles):
+            old_part[j] = new_part[j]
+
+    # Compile the rest of the output
+    return filt_state_est, log_like
 
 
-def flps_lgss(np.ndarray[DTYPE_float_t, ndim=2] observations,
-              np.ndarray[DTYPE_float_t] params,
-              int no_particles,
-              int fixed_lag,
-              np.ndarray[DTYPE_float_t, ndim=2] ancestors,
-              np.ndarray[DTYPE_float_t, ndim=2] particles,
-              np.ndarray[DTYPE_float_t, ndim=2] weights):
-    """Fixed-lag particle smoother for linear Gaussian model"""
-
-    cdef float mu = params[0]
-    cdef float phi = params[1]
-    cdef float sigmav = params[2]
-    cdef float sigmae = params[3]
-    cdef int no_obs = len(observations)
-
-    # Initalise variables
-    cdef np.ndarray[DTYPE_float_t, ndim=2] smo_state_est = np.zeros((no_obs, 1))
-    cdef np.ndarray[DTYPE_float_t, ndim=2] smo_gradient_est = np.zeros((4, no_obs))
-    cdef np.ndarray[DTYPE_float_t] log_joint_gradient_estimate = np.zeros(4)
-    cdef np.ndarray[DTYPE_float_t, ndim=2] gradient_at_i = np.zeros((4, no_particles))
-
-    smo_state_est[0] = np.sum(particles[:, 0] * weights[:, 0])
-    smo_state_est[no_obs-1] = np.sum(particles[:, no_obs-1] * weights[:, no_obs-1])
-
-    # Run the fixed-lag smoother for the rest
-    for i in range(0, no_obs-1):
-        particle_indicies = np.arange(0, no_particles)
-        lag = int(np.min((i + fixed_lag, no_obs - 1)))
-
-        # Reconstruct particle trajectory
-        curr_ancestor = particle_indicies
-        for j in range(lag, i, -1):
-            curr_ancestor = curr_ancestor.astype(int)
-            next_ancestor = curr_ancestor.astype(int)
-            curr_ancestor = ancestors[curr_ancestor, j].astype(int)
-
-        # Estimate state
-        weighted_particles = particles[curr_ancestor, i] * weights[:, lag]
-        smo_state_est[i] = np.nansum(weighted_particles)
-
-        # Estimate gradient
-        state_quad_term = particles[next_ancestor, i+1] - mu
-        state_quad_term -= phi * (particles[curr_ancestor, i] - mu)
-        q_matrix = sigmav**(-2)
-        r_matrix = sigmae**(-2)
-
-        gradient_at_i[0, :] = q_matrix * state_quad_term * (1.0 - phi)
-        gradient_at_i[1, :] = q_matrix * state_quad_term
-        gradient_at_i[1, :] *= (particles[curr_ancestor, i] - mu)
-        gradient_at_i[1, :] *= (1.0 - phi**2)
-        gradient_at_i[2, :] = q_matrix * state_quad_term**2 - 1.0
-        gradient_at_i[3, :] = 0.0
-
-        for j in range(4):
-            weighted_gradients = gradient_at_i[j, :] * weights[:, lag]
-            smo_gradient_est[j, i] = np.nansum(weighted_gradients)
-
-    log_joint_gradient_estimate = np.sum(smo_gradient_est, axis=1)
-
-    return {'smo_state_est': smo_state_est,
-            'log_joint_gradient_estimate': log_joint_gradient_estimate
-           }
-
-def norm_logpdf(float parm, np.ndarray[DTYPE_float_t] mean, float stdev):
+@cython.cdivision(True)
+@cython.boundscheck(False)
+cdef double norm_logpdf(double x, double m, double s):
     """Helper for computing the log of the Gaussian pdf."""
-    cdef np.ndarray[DTYPE_float_t] quad_term = -0.5 / (stdev**2) * (parm - mean)**2
-    return -0.5 * np.log(2 * np.pi * stdev**2) + quad_term
+    cdef double part1 = -0.91893853320467267 # -0.5 * log(2 * pi)
+    cdef double part2 = -log(s)
+    cdef double part3 = -0.5 * (x - m) * (x - m) / (s * s)
+    return part1 + part2 + part3
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+cdef void systematic(int *ancestors, double weights[NoParticles]):
+    cdef int cur_idx = 0
+    cdef int j = 0
+    cdef double rnd_number = random_uniform()
+    cdef double cpoint = 0.0
+    cdef double[NoParticles] cum_weights
+    cdef double sum_weights
+
+    # Compute the empirical CDF of the weights
+    cum_weights[0] = weights[0]
+    sum_weights = weights[0]
+    for j in range(1, NoParticles):
+        cum_weights[j] = cum_weights[j-1] + weights[j]
+        sum_weights += weights[j]
+
+    for j in range(1, NoParticles):
+        cum_weights[j] /= sum_weights
+
+    for j in range(NoParticles):
+        cpoint = (rnd_number + j) / NoParticles
+        while cum_weights[cur_idx] < cpoint and cur_idx < NoParticles - 1:
+            cur_idx += 1
+        ancestors[j] = cur_idx
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+cdef double random_uniform():
+    cdef double r = rand()
+    return r / RAND_MAX
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+cdef double random_gaussian():
+    cdef double x1, x2, w
+
+    w = 2.0
+    while (w >= 1.0):
+        x1 = 2.0 * random_uniform() - 1.0
+        x2 = 2.0 * random_uniform() - 1.0
+        w = x1 * x1 + x2 * x2
+
+    w = sqrt((-2.0 * log(w)) / w)
+    return x1 * w
+
+@cython.boundscheck(False)
+cdef double my_max(double weights[NoParticles]):
+    cdef int idx = 0
+    cdef int i = 0
+    cdef double current_largest = weights[0]
+
+    for i in range(1, NoParticles):
+        if weights[i] > current_largest and isfinite(weights[i]):
+            idx = i
+    return weights[idx]

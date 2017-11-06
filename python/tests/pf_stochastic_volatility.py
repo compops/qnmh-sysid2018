@@ -95,7 +95,7 @@ def run(cython_code=False, save_to_file=False):
             gradient_phi[i, j] = pf.results['gradient_internal'].flatten()
             gradient_phi[i, j]/= (1.0 - grid_phi[i]**2)
             nat_gradient_phi[i, j] = pf.results['gradient_internal'].flatten()
-            nat_gradient_phi[i, j]/= pf.results['pf.hessian_internal'].flatten()
+            nat_gradient_phi[i, j]/= pf.results['hessian_internal'].flatten()
             print("Grid point: {}/{} and iteration {}/{}".format(i,
                   len(grid_phi), j, repetitions))
 
@@ -116,7 +116,7 @@ def run(cython_code=False, save_to_file=False):
             gradient_sigmav[i, j] = pf.results['gradient_internal'].flatten()
             gradient_sigmav[i, j] /= grid_sigmav[i]
             nat_gradient_sigmav[i, j] = pf.results['gradient_internal'].flatten()
-            nat_gradient_sigmav[i, j] /= pf.results['pf.hessian_internal'].flatten()
+            nat_gradient_sigmav[i, j] /= pf.results['hessian_internal'].flatten()
             print("Grid point: {}/{} and iteration {}/{}".format(i,
                   len(grid_sigmav), j, repetitions))
 

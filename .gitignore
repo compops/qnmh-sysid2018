@@ -1,13 +1,9 @@
 results/
-*.pickle
-.pickle
-.pdf
-*.pdf
-result/
-.json
-*.json
-results-test/
 results-tests/
+*.pickle
+*.pdf
+*.json
+*.txt
 
 .vscode/
 .R~

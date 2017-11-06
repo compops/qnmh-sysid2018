@@ -62,7 +62,8 @@ def run(filter_method='kalman', alg_type='bfgs', plotting=True, file_tag=None,
                    'qn_initial_hessian': 'scaled_gradient',
                    'qn_initial_hessian_scaling': 0.01,
                    'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
-                   'qn_only_accepted_info': True
+                   'qn_only_accepted_info': True,
+                   'qn_accept_all_initial': False
                    }
 
 

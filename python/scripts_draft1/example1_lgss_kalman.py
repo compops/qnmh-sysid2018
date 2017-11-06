@@ -26,7 +26,7 @@ def main(seed_offset=0):
                    'step_size': 0.8,
                    'base_hessian': hessian_estimate,
                    'initial_params': (0.0, 0.1, 0.2),
-                   'verbose': True,
+                   'verbose': False,
                    'verbose_wait_enter': False,
                    'trust_region_size': None,
                    'hessian_estimate': None,
