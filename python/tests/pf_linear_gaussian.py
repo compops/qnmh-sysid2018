@@ -16,12 +16,13 @@ def run(cython_code=False, save_to_file=False):
     sys_model.params['mu'] = 0.2
     sys_model.params['phi'] = 0.5
     sys_model.params['sigma_v'] = 1.0
-    sys_model.params['sigma_e'] = 0.4
-    sys_model.no_obs = 1000
+    sys_model.params['sigma_e'] = 0.5
+    sys_model.no_obs = 500
     sys_model.initial_state = 0.0
     #sys_model.generate_data()
     #sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
-    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
+    #sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
+    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T500_midSNR.csv")
 
     # Inference model
     sys_model.fix_true_params()

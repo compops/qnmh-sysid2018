@@ -7,7 +7,7 @@ from libc.math cimport log, sqrt, exp, isfinite
 from libc.float cimport FLT_MAX
 from libc.stdlib cimport malloc, free
 
-DEF NoObs = 1001
+DEF NoObs = 501
 DEF PI = 3.1415
 
 @cython.cdivision(True)

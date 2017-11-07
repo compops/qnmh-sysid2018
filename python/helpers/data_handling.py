@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import quandl
 
-def import_data_quandl(model, handle, start_date, end_date, variable):
+def import_data_quandl(model, handle, start_date, end_date, variable, api_key=None):
     """ Imports financial data from Quandl.
 
         Downloads data from Quandl and computes the log-returns in percent.
@@ -21,6 +21,9 @@ def import_data_quandl(model, handle, start_date, end_date, variable):
            Nothing.
 
     """
+    if api_key:
+        quandl.ApiConfig.api_key = api_key
+
     data = quandl.get(handle, start_date=start_date, end_date=end_date)
     log_returns = 100 * np.diff(np.log(data[variable]))
     model.no_obs = len(log_returns) - 1

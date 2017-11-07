@@ -1,9 +1,9 @@
 """Particle methods."""
 import numpy as np
-from state.particle_methods.cython_lgss_helper import bpf_lgss, flps_lgss
+from state.particle_methods.cython_sv_helper import bpf_sv, flps_sv
 from state.base_state_inference import BaseStateInference
 
-class ParticleMethodsCythonLGSS(BaseStateInference):
+class ParticleMethodsCythonSV(BaseStateInference):
     """Particle methods."""
 
     def __init__(self, new_settings=None):
@@ -24,7 +24,7 @@ class ParticleMethodsCythonLGSS(BaseStateInference):
         self.name = "Bootstrap particle filter (Cython)"
         obs = np.array(model.obs.flatten())
         params = model.get_all_params()
-        state, ll = bpf_lgss(obs, mu=params[0], phi=params[1], sigmav=params[2], sigmae=params[3])
+        state, ll = bpf_sv(obs, mu=params[0], phi=params[1], sigmav=params[2])
         self.results.update({'filt_state_est': np.array(state).reshape((model.no_obs+1, 1)), 'log_like': ll})
 
     def smoother(self, model):
@@ -32,9 +32,8 @@ class ParticleMethodsCythonLGSS(BaseStateInference):
         self.name = "Fixed-lag particle smoother (Cython)"
         obs = np.array(model.obs.flatten())
         params = model.get_all_params()
-        xhatf, xhats, ll, gradient = flps_lgss(obs, mu=params[0],
-                                               phi=params[1], sigmav=params[2],
-                                               sigmae=params[3])
+        xhatf, xhats, ll, gradient = flps_sv(obs, mu=params[0],
+                                             phi=params[1], sigmav=params[2])
 
         # Compute estimate of gradient and Hessian
         gradient = np.array(gradient).reshape((model.no_params, model.no_obs+1))

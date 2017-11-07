@@ -5,15 +5,9 @@ import scripts_draft1.helper_linear_gaussian as mh
 def main(seed_offset=0):
     """Runs the experiment."""
 
-    # linear_gaussian_model_T1000_goodSNR
-    # hessian_estimate = np.array([[0.0049,  0.0006,  0.0002 ],
-    #                              [0.0006,  0.0013,  0.0002],
-    #                              [0.0002,  0.0002,  0.0005 ]])
-
-    # linear_gaussian_model_T1000_midSNR
-    hessian_estimate = np.array([[  3.17e-03,  -2.65e-05,   5.843e-05],
-                                 [ -2.65e-05,   1.01e-03,  -1.60e-04],
-                                 [  5.84e-05,  -1.60e-04,   7.80e-04]])
+    hessian_estimate = np.array([[ 0.00397222, -0.00228247,  0.00964908],
+                                 [-0.00228247,  0.00465944, -0.00961161],
+                                 [ 0.00964908, -0.00961161,  0.05049018]])
 
     pf_settings = {'no_particles': 2000,
                    'resampling_method': 'systematic',
@@ -44,7 +38,8 @@ def main(seed_offset=0):
                    'qn_sr1_skip_limit': 1e-8,
                    'qn_initial_hessian_scaling': 0.01,
                    'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
-                   'qn_only_accepted_info': True
+                   'qn_only_accepted_info': True,
+                   'qn_accept_all_initial': True
                    }
 
     mh_settings.update({'step_size': 0.1})

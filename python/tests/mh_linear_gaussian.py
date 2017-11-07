@@ -16,12 +16,10 @@ def run(cython_code=True, filter_method='kalman', alg_type='mh0', plotting=True,
     sys_model.params['mu'] = 0.20
     sys_model.params['phi'] = 0.50
     sys_model.params['sigma_v'] = 1.00
-    sys_model.params['sigma_e'] = 0.40
-    sys_model.no_obs = 1000
+    sys_model.params['sigma_e'] = 0.50
+    sys_model.no_obs = 500
     sys_model.initial_state = 0.0
-    #sys_model.generate_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
-    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_midSNR.csv")
-    #sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T1000_goodSNR.csv")
+    sys_model.import_data(file_name="../data/linear_gaussian_model/linear_gaussian_model_T500_midSNR.csv")
 
     # Inference model
     sys_model.fix_true_params()
@@ -51,15 +49,9 @@ def run(cython_code=True, filter_method='kalman', alg_type='mh0', plotting=True,
         pf.settings.update(kwargs)
 
     # Metropolis-Hastings
-    # linear_gaussian_model_T1000_goodSNR
-    # hessian_estimate = np.array([[0.00485467,  0.00062787,  0.0001611 ],
-    #                              [0.00062787,  0.00133698,  0.00015099],
-    #                              [0.0001611,   0.00015099,  0.0005252 ]])
-
-    # linear_gaussian_model_T1000_midSNR
-    hessian_estimate = np.array([[  3.17466496e-03,  -2.65148861e-05,   5.84256527e-05],
-                                 [ -2.65148861e-05,   1.00771014e-03,  -1.59533168e-04],
-                                 [  5.84256527e-05,  -1.59533168e-04,   7.80308724e-04]])
+    hessian_estimate = np.array([[ 0.00397222, -0.00228247,  0.00964908],
+                                 [-0.00228247,  0.00465944, -0.00961161],
+                                 [ 0.00964908, -0.00961161,  0.05049018]])
 
     mh_settings = {'no_iters': 2500,
                    'no_burnin_iters': 500,
