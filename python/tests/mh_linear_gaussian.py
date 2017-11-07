@@ -4,10 +4,12 @@ import matplotlib.pylab as plt
 from models.linear_gaussian_model import LinearGaussianModel
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
 from state.kalman_methods.standard import KalmanMethods
+from state.kalman_methods.cython import KalmanMethodsCython
 from state.particle_methods.standard import ParticleMethods
+from state.particle_methods.cython_lgss import ParticleMethodsCythonLGSS
 
-def run(filter_method='kalman', alg_type='mh0', plotting=True, file_tag=None,
-        **kwargs):
+def run(cython_code=True, filter_method='kalman', alg_type='mh0', plotting=True,
+        file_tag=None, **kwargs):
 
     # System model
     sys_model = LinearGaussianModel()
@@ -27,15 +29,24 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True, file_tag=None,
     print(sys_model)
 
     # Kalman filter and smoother
-    kf = KalmanMethods()
+    if cython_code:
+        kf = KalmanMethodsCython()
+    else:
+        kf = KalmanMethods()
+
     if kwargs:
         kf.settings.update(kwargs)
 
     # Particle filter and smoother
-    pf = ParticleMethods()
+    if cython_code:
+        pf = ParticleMethodsCythonLGSS()
+    else:
+        pf = ParticleMethods()
+
     pf.settings.update({'no_particles': 1000,
                         'fixed_lag': 10,
                         'verbose': False})
+
     if kwargs:
         pf.settings.update(kwargs)
 
@@ -91,9 +102,6 @@ def run(filter_method='kalman', alg_type='mh0', plotting=True, file_tag=None,
         sim_name = 'test_linear_gaussian_' + alg_type + '_' + filter_method
         if file_tag:
             sim_name += '_' + file_tag
-        mh.save_to_file(output_path='../results-tests',
-                        sim_name=sim_name,
-                        sim_desc='...')
-        mh.save_to_file(output_path='../results-tests',
+        mh.save_to_file(output_path='../results-tests/mh-linear-gaussian/',
                         sim_name=sim_name,
                         sim_desc='...')

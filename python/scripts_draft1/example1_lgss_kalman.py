@@ -2,7 +2,7 @@
 import numpy as np
 import scripts_draft1.helper_linear_gaussian as mh
 
-def main(seed_offset=0):
+def main(cython_code=True, seed_offset=0):
     """Runs the experiment."""
 
     # linear_gaussian_model_T1000_goodSNR
@@ -21,8 +21,8 @@ def main(seed_offset=0):
                    'estimate_gradient': True
                    }
 
-    mh_settings = {'no_iters': 5000,
-                   'no_burnin_iters': 1000,
+    mh_settings = {'no_iters': 10000,
+                   'no_burnin_iters': 3000,
                    'step_size': 0.8,
                    'base_hessian': hessian_estimate,
                    'initial_params': (0.0, 0.1, 0.2),
@@ -32,7 +32,7 @@ def main(seed_offset=0):
                    'hessian_estimate': None,
                    'hessian_correction': 'replace',
                    'hessian_correction_verbose': False,
-                   'no_iters_between_progress_reports': 100,
+                   'no_iters_between_progress_reports': 1000,
                    'qn_memory_length': 20,
                    'qn_initial_hessian': 'scaled_gradient',
                    'qn_strategy': None,
@@ -45,71 +45,44 @@ def main(seed_offset=0):
                    'qn_accept_all_initial': True
                    }
 
-    # mh_settings.update({'step_size': 0.1})
-    # sim_name = 'example1_mh1pre_' + str(seed_offset)
-    # mh.run(mh_settings=mh_settings,
-    #        kf_settings=kf_settings,
-    #        pf_settings=None,
-    #        filter_method='kalman',
-    #        alg_type='mh1',
-    #        sim_name=sim_name,
-    #        seed_offset=seed_offset)
+    mh_settings.update({'step_size': 0.1})
+    sim_name = 'example1_mh1pre_' + str(seed_offset)
+    mh.run(mh_settings=mh_settings,
+           cython_code=True,
+           kf_settings=kf_settings,
+           pf_settings=None,
+           filter_method='kalman',
+           alg_type='mh1',
+           sim_name=sim_name,
+           seed_offset=seed_offset)
 
-    # mh_settings.update({'step_size': 0.8})
-    # sim_name = 'example1_mh2sw_' + str(seed_offset)
-    # mh.run(mh_settings=mh_settings,
-    #        kf_settings=kf_settings,
-    #        pf_settings=None,
-    #        filter_method='kalman',
-    #        alg_type='mh2',
-    #        sim_name=sim_name,
-    #        seed_offset=seed_offset)
+    mh_settings.update({'step_size': 0.8})
+    sim_name = 'example1_mh2sw_' + str(seed_offset)
+    mh.run(mh_settings=mh_settings,
+           cython_code=True,
+           kf_settings=kf_settings,
+           pf_settings=None,
+           filter_method='kalman',
+           alg_type='mh2',
+           sim_name=sim_name,
+           seed_offset=seed_offset)
 
-    # mh_settings.update({'qn_strategy': 'bfgs'})
-    # sim_name = 'example1_mh_bfgs_' + str(seed_offset)
-    # sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
-    #             'Hessian such that the gradient gives a step of 0.01. Non-PD ',
-    #             'estimates are replaced with an empirical approximation of the ',
-    #             'Hessian.')
-    # mh.run(mh_settings=mh_settings,
-    #        kf_settings=kf_settings,
-    #        pf_settings=None,
-    #        filter_method='kalman',
-    #        alg_type='qmh',
-    #        sim_name=sim_name,
-    #        seed_offset=seed_offset)
-
-    # mh_settings.update({'qn_strategy': 'sr1',
-    #                     'hessian_correction': 'flip'})
-    # sim_name = 'example1_mh_sr1_flip_' + str(seed_offset)
-    # sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
-    #             'such that the gradient gives a step of 0.01. Non-PD estimates ',
-    #             'are corrected by flipping negative eigenvalues.')
-
-    # mh.run(mh_settings=mh_settings,
-    #        kf_settings=kf_settings,
-    #        pf_settings=None,
-    #        filter_method='kalman',
-    #        alg_type='qmh',
-    #        sim_name=sim_name,
-    #        seed_offset=seed_offset)
-
-    # mh_settings.update({'qn_strategy': 'sr1',
-    #                     'hessian_correction': 'replace'})
-    # sim_name = 'example1_mh_sr1_hyb_' + str(seed_offset)
-    # sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
-    #             'such that the gradient gives a step of 0.01. Non-PD estimates ',
-    #             'are replaced with an empirical approximation of the Hessian.')
-    # mh.run(mh_settings=mh_settings,
-    #        kf_settings=kf_settings,
-    #        pf_settings=None,
-    #        filter_method='kalman',
-    #        alg_type='qmh',
-    #        sim_name=sim_name,
-    #        seed_offset=seed_offset)
+    mh_settings.update({'qn_strategy': 'bfgs'})
+    sim_name = 'example1_mh_bfgs_' + str(seed_offset)
+    sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
+                'Hessian such that the gradient gives a step of 0.01. Non-PD ',
+                'estimates are replaced with an empirical approximation of the ',
+                'Hessian.')
+    mh.run(mh_settings=mh_settings,
+           cython_code=True,
+           kf_settings=kf_settings,
+           pf_settings=None,
+           filter_method='kalman',
+           alg_type='qmh',
+           sim_name=sim_name,
+           seed_offset=seed_offset)
 
     mh_settings.update({'qn_strategy': 'bfgs',
-                        'qn_only_accepted_info': True,
                         'qn_bfgs_curvature_cond': 'ignore',
                         'hessian_correction': 'replace'})
     sim_name = 'example1_mh_bfgs_' + str(seed_offset) + '_ignore_replace'
@@ -118,6 +91,7 @@ def main(seed_offset=0):
                 'estimates are replaced with an empirical approximation of the ',
                 'Hessian.')
     mh.run(mh_settings=mh_settings,
+           cython_code=True,
            kf_settings=kf_settings,
            pf_settings=None,
            filter_method='kalman',
@@ -126,7 +100,6 @@ def main(seed_offset=0):
            seed_offset=seed_offset)
 
     mh_settings.update({'qn_strategy': 'bfgs',
-                        'qn_only_accepted_info': True,
                         'qn_bfgs_curvature_cond': 'ignore',
                         'hessian_correction': 'regularise'})
     sim_name = 'example1_mh_bfgs_' + str(seed_offset) + '_ignore_reg'
@@ -135,6 +108,7 @@ def main(seed_offset=0):
                 'estimates are replaced with an empirical approximation of the ',
                 'Hessian.')
     mh.run(mh_settings=mh_settings,
+           cython_code=True,
            kf_settings=kf_settings,
            pf_settings=None,
            filter_method='kalman',
@@ -143,7 +117,6 @@ def main(seed_offset=0):
            seed_offset=seed_offset)
 
     mh_settings.update({'qn_strategy': 'bfgs',
-                        'qn_only_accepted_info': True,
                         'qn_bfgs_curvature_cond': 'ignore',
                         'hessian_correction': 'flip'})
     sim_name = 'example1_mh_bfgs_' + str(seed_offset) + '_ignore_flip'
@@ -152,6 +125,7 @@ def main(seed_offset=0):
                 'estimates are replaced with an empirical approximation of the ',
                 'Hessian.')
     mh.run(mh_settings=mh_settings,
+           cython_code=True,
            kf_settings=kf_settings,
            pf_settings=None,
            filter_method='kalman',
@@ -159,67 +133,24 @@ def main(seed_offset=0):
            sim_name=sim_name,
            seed_offset=seed_offset)
 
-    mh_settings.update({'qn_strategy': 'bfgs',
-                        'qn_only_accepted_info': True,
-                        'qn_bfgs_curvature_cond': 'ignore',
-                        'hessian_correction': 'replace'})
-    sim_name = 'example1_mh_bfgs_' + str(seed_offset) + '_enforce_replace'
+    mh_settings.update({'step_size': 0.85,
+                        'qn_strategy': 'bfgs',
+                        'qn_only_accepted_info': False,
+                        'qn_accept_all_initial': True,
+                        'qn_bfgs_curvature_cond': 'damped'})
+    sim_name = 'example1_mh_bfgs_useall_' + str(seed_offset)
     sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
                 'Hessian such that the gradient gives a step of 0.01. Non-PD ',
                 'estimates are replaced with an empirical approximation of the ',
                 'Hessian.')
     mh.run(mh_settings=mh_settings,
+           cython_code=True,
            kf_settings=kf_settings,
            pf_settings=None,
            filter_method='kalman',
            alg_type='qmh',
            sim_name=sim_name,
            seed_offset=seed_offset)
-
-    # mh_settings.update({'qn_strategy': 'bfgs',
-    #                     'qn_only_accepted_info': False})
-    # sim_name = 'example1_mh_bfgs_' + str(seed_offset) + '_allinfo'
-    # sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
-    #             'Hessian such that the gradient gives a step of 0.01. Non-PD ',
-    #             'estimates are replaced with an empirical approximation of the ',
-    #             'Hessian.')
-    # mh.run(mh_settings=mh_settings,
-    #        kf_settings=kf_settings,
-    #        pf_settings=None,
-    #        filter_method='kalman',
-    #        alg_type='qmh',
-    #        sim_name=sim_name,
-    #        seed_offset=seed_offset)
-
-    # mh_settings.update({'qn_strategy': 'sr1',
-    #                     'hessian_correction': 'flip',
-    #                     'qn_only_accepted_info': False})
-    # sim_name = 'example1_mh_sr1_flip_' + str(seed_offset) + '_allinfo'
-    # sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
-    #             'such that the gradient gives a step of 0.01. Non-PD estimates ',
-    #             'are corrected by flipping negative eigenvalues.')
-    # mh.run(mh_settings=mh_settings,
-    #        kf_settings=kf_settings,
-    #        pf_settings=None,
-    #        filter_method='kalman',
-    #        alg_type='qmh',
-    #        sim_name=sim_name,
-    #        seed_offset=seed_offset)
-
-    # mh_settings.update({'qn_strategy': 'sr1',
-    #                     'hessian_correction': 'replace',
-    #                     'qn_only_accepted_info': False})
-    # sim_name = 'example1_mh_sr1_hyb_' + str(seed_offset) + '_allinfo'
-    # sim_desc = ('SR1 for estimating Hessian. Scaling the initial Hessian ',
-    #             'such that the gradient gives a step of 0.01. Non-PD estimates ',
-    #             'are replaced with an empirical approximation of the Hessian.')
-    # mh.run(mh_settings=mh_settings,
-    #        kf_settings=kf_settings,
-    #        pf_settings=None,
-    #        filter_method='kalman',
-    #        alg_type='qmh',
-    #        sim_name=sim_name,
-    #        seed_offset=seed_offset)
 
     return None
 

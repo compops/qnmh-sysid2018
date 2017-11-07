@@ -8,7 +8,7 @@ class KalmanMethodsCython(BaseStateInference):
     """Kalman methods."""
 
     def __init__(self, new_settings=None):
-        self.name = None
+        self.name = "Kalman methods (Cython implementation)"
         self.settings = {'initial_state': 0.0,
                          'initial_cov': 1e-5,
                          'estimate_gradient': False
@@ -26,11 +26,11 @@ class KalmanMethodsCython(BaseStateInference):
                                              initial_state=self.settings['initial_state'],
                                              initial_cov=self.settings['initial_cov'])
 
-        self.results.update({'pred_state_est': xhatp})
-        self.results.update({'pred_state_cov': Pp})
-        self.results.update({'filt_state_est': xhatf})
-        self.results.update({'filt_state_cov': Pf})
-        self.results.update({'log_like': ll})
+        self.results.update({'pred_state_est': np.array(xhatp).reshape((model.no_obs+1, 1))})
+        self.results.update({'pred_state_cov': np.array(Pp).reshape((model.no_obs+1, 1))})
+        self.results.update({'filt_state_est': np.array(xhatf).reshape((model.no_obs+1, 1))})
+        self.results.update({'filt_state_cov': np.array(Pf).reshape((model.no_obs+1, 1))})
+        self.results.update({'log_like': float(ll)})
 
     def smoother(self, model):
         """Kalman smoother."""
@@ -62,7 +62,7 @@ class KalmanMethodsCython(BaseStateInference):
         self.results.update({'filt_state_cov': np.array(Pf).reshape((model.no_obs+1, 1))})
         self.results.update({'smo_state_est': np.array(xhats).reshape((model.no_obs+1, 1))})
         self.results.update({'smo_state_cov': np.array(Ps).reshape((model.no_obs+1, 1))})
-        self.results.update({'log_like': ll})
+        self.results.update({'log_like': float(ll)})
         self.results.update({'log_joint_gradient_estimate': log_joint_gradient_estimate})
         self.results.update({'log_joint_hessian_estimate': log_joint_hessian_estimate})
 

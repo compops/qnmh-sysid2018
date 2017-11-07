@@ -7,7 +7,7 @@ class ParticleMethodsCythonLGSS(BaseStateInference):
     """Particle methods."""
 
     def __init__(self, new_settings=None):
-
+        self.name = "Particle methods (Cython implementation)"
         self.settings = {'no_particles': 100,
                          'resampling_method': 'systematic',
                          'fixed_lag': 0,

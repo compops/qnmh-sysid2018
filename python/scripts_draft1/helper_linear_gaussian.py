@@ -3,10 +3,13 @@ import numpy as np
 from models.linear_gaussian_model import LinearGaussianModel
 from parameter.mcmc.metropolis_hastings import MetropolisHastings
 from state.kalman_methods.standard import KalmanMethods
+from state.kalman_methods.cython import KalmanMethodsCython
 from state.particle_methods.standard import ParticleMethods
+from state.particle_methods.cython_lgss import ParticleMethodsCythonLGSS
 
-def run(mh_settings, kf_settings=None, pf_settings=None, filter_method='kalman',
-        alg_type='mh0', sim_name='test', sim_desc=".", seed_offset=0):
+def run(mh_settings, cython_code=True, kf_settings=None, pf_settings=None,
+        filter_method='kalman', alg_type='mh0', sim_name='test', sim_desc=".",
+        seed_offset=0):
 
     # Set random seed for repreducibility
     np.random.seed(87655678 + seed_offset)
@@ -27,10 +30,16 @@ def run(mh_settings, kf_settings=None, pf_settings=None, filter_method='kalman',
     print(sys_model)
 
     # Kalman filter and smoother
-    kf = KalmanMethods(kf_settings)
+    if cython_code:
+        kf = KalmanMethodsCython(kf_settings)
+    else:
+        kf = KalmanMethods(kf_settings)
 
     # Particle filter and smoother
-    pf = ParticleMethods(pf_settings)
+    if cython_code:
+        pf = ParticleMethodsCythonLGSS(pf_settings)
+    else:
+        pf = ParticleMethods(pf_settings)
 
     # Metropolis-Hastings
     mh = MetropolisHastings(sys_model, alg_type, mh_settings)

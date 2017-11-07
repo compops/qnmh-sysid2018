@@ -1,5 +1,6 @@
 """Helpers for manipulating the file system."""
 import json
+import gzip
 import os
 
 import numpy as np
@@ -18,7 +19,7 @@ def ensure_dir(file_name):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def write_to_json(data, output_path, sim_name, output_type):
+def write_to_json(data, output_path, sim_name, output_type, as_gzip=True):
     """ Writes result of state/parameter estimation to file.
 
         Writes results in the form of a dictionary to file as JSON.
@@ -44,7 +45,13 @@ def write_to_json(data, output_path, sim_name, output_type):
     file_name = output_path + '/' + sim_name + '/' + output_type
     ensure_dir(file_name)
 
-    with open(file_name, 'w') as f:
-        json.dump(data, f, ensure_ascii=False)
+    if as_gzip:
+        with gzip.GzipFile(file_name + '.gz', 'w') as fout:
+            json_str = json.dumps(data)
+            json_bytes = json_str.encode('utf-8')
+            fout.write(json_bytes)
+    else:
+        with open(file_name, 'w') as f:
+            json.dump(data, f, ensure_ascii=False)
 
     print("Wrote results to: " + file_name + ".")

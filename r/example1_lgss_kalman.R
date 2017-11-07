@@ -15,15 +15,15 @@ for (i in 1:length(algorithms)) {
     algorithm <- algorithms[i]
 
     data <- read_json(paste("../results/example1/",
-                      paste(algorithm, "/data.json", sep=""),
+                      paste(algorithm, "/data.json.gz", sep=""),
                       sep=""),
                       simplifyVector = TRUE)
     result <- read_json(paste("../results/example1/",
-                        paste(algorithm, "/mcmc_output.json", sep=""),
+                        paste(algorithm, "/mcmc_output.json.gz", sep=""),
                         sep=""),
                         simplifyVector = TRUE)
     settings <- read_json(paste("../results/example1/",
-                          paste(algorithm, "/settings.json", sep=""),
+                          paste(algorithm, "/settings.json.gz", sep=""),
                           sep=""),
                           simplifyVector = TRUE)
 
@@ -33,6 +33,7 @@ for (i in 1:length(algorithms)) {
                             algorithm=algorithm,
                             noItersToPlot=noItersToPlot,
                             savePlotToFile=savePlotToFile,
-                            paramsScale=paramsScale)
+                            paramsScale=paramsScale,
+                            folderToSaveTo="../results/example1/")
   }
 }

@@ -51,6 +51,7 @@ def get_hessian(mcmc, state_estimator, prop_gradient=None):
     if mcmc.use_hess_info:
         if mcmc.settings['hessian_estimate'] is 'segal_weinstein':
             hessian_est = state_estimator.results['hessian_internal']
+            inverse_hessian = np.real(inverse_hessian)
             inverse_hessian = np.linalg.inv(hessian_est)
             inverse_hessian *= step_size
             return correct_hessian(inverse_hessian, mcmc)
@@ -58,6 +59,7 @@ def get_hessian(mcmc, state_estimator, prop_gradient=None):
             if mcmc.current_iter > mcmc.settings['qn_memory_length']:
                 inverse_hessian, no_samples = quasi_newton(mcmc, prop_gradient)
                 if inverse_hessian is not None:
+                    inverse_hessian = np.real(inverse_hessian)
                     inverse_hessian *= step_size
                 mcmc.no_samples_hess_est[mcmc.current_iter] = no_samples
                 return correct_hessian(inverse_hessian, mcmc)
@@ -151,7 +153,12 @@ def correct_hessian(estimate, mcmc):
                       ", corrected Hessian by adding diagonal matrix " +
                       "with elements: " + str(-2.0 * min_eigval))
             corrected_estimate = estimate
-            corrected_estimate -= 2.0 * min_eigval * np.eye(estimate.shape[0])
+            try:
+                corrected_estimate -= 2.0 * min_eigval * np.eye(estimate.shape[0])
+            except TypeError:
+                print(correct_hessian)
+                print(type(correct_hessian))
+                print(np.real(correct_hessian))
             return corrected_estimate
 
         # Flip the negative eigenvalues
@@ -164,7 +171,7 @@ def correct_hessian(estimate, mcmc):
             ev_matrix = np.diag(np.abs(evd[0]))
             estimate = np.matmul(evd[1], ev_matrix)
             estimate = np.matmul(estimate, evd[1])
-            return estimate
+            return np.real(estimate)
         else:
             raise ValueError("Unknown Hessian correction strategy...")
     else:

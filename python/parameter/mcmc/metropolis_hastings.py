@@ -432,7 +432,8 @@ class MetropolisHastings(BaseParameterInference):
                     accept_prob = np.exp(log_prior_diff + log_like_diff +
                                          log_prop_diff + log_jacob_diff)
                 except:
-                    print("Accepted as overflow occured...")
+                    if self.settings['verbose']:
+                        print("Accepted as overflow occured...")
                     accept_prob = 1.0
 
                 if self.settings['trust_region_size']:
@@ -447,12 +448,12 @@ class MetropolisHastings(BaseParameterInference):
                 print("iteration: " + str(self.current_iter) +
                       ", estimate of inverse Hessian is not PSD or is" +
                       " singular, so rejecting...")
-                #print(prop_hess)
-                #print(np.linalg.eig(prop_hess)[0])
                 accept_prob = 0.0
+                prop_hess = np.zeros((model.no_params_to_estimate, model.no_params_to_estimate))
 
             # Initialisation for qMH (accept all initially proposed steps)
-            if self.settings['qn_accept_all_initial'] and \
+            if self.settings['hessian_estimate'] is 'quasi_newton' and \
+                    self.settings['qn_accept_all_initial'] and \
                     self.current_iter < self.settings['qn_memory_length']:
                 accept_prob = 1.0
 

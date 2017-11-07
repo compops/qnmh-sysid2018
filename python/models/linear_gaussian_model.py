@@ -267,9 +267,14 @@ class LinearGaussianModel(BaseModel):
                 in params_to_estimate.
 
         """
-        jacobian = {}
-        jacobian.update({'mu': 0.0})
-        jacobian.update({'phi': np.log(1.0 - self.params['phi']**2)})
-        jacobian.update({'sigma_v': np.log(self.params['sigma_v'])})
-        jacobian.update({'sigma_e': np.log(self.params['sigma_e'])})
+        try:
+            jacobian = {}
+            jacobian.update({'mu': 0.0})
+            jacobian.update({'phi': np.log(1.0 - self.params['phi']**2)})
+            jacobian.update({'sigma_v': np.log(self.params['sigma_v'])})
+            jacobian.update({'sigma_e': np.log(self.params['sigma_e'])})
+        except RuntimeWarning:
+            return -np.inf
+
         return self._compile_log_jacobian(jacobian)
+

@@ -1,7 +1,7 @@
 library("RColorBrewer")
 
 helper_plotting <- function(data, result, settings, algorithm, noItersToPlot,
-                            savePlotToFile, paramsScale) {
+                            savePlotToFile, paramsScale, folderToSaveTo) {
 
   plotColors = brewer.pal(8, "Dark2");
   plotColors = c(plotColors, plotColors)
@@ -29,8 +29,9 @@ helper_plotting <- function(data, result, settings, algorithm, noItersToPlot,
 
   # Plot the parameter posterior estimate, solid black line indicate posterior mean
   # Plot the trace of the Markov chain after burn-in, solid black line indicate posterior mean
-  if (savePlotToFile) {cairo_pdf(paste(algorithm, ".pdf", sep=""),
-                                       height = 10, width = 8)}
+  if (savePlotToFile) {
+    fileName <- paste(folderToSaveTo, paste(algorithm, ".pdf", sep=""), sep="")
+    cairo_pdf(fileName, height = 10, width = 8)}
 
   layout(matrix(c(1, 1, 1, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
          5, 3, byrow = TRUE))
