@@ -124,6 +124,10 @@ def init_hessian_estimate(mcmc, prop_gradient, param_diff, grad_diff):
         return identity_matrix * scaling / np.linalg.norm(prop_gradient, 2)
 
     if strategy is 'scaled_curvature':
-        scaled_curvature = np.dot(param_diff[0], grad_diff[0])
-        scaled_curvature *= np.dot(grad_diff[0], grad_diff[0])
-        return identity_matrix * np.abs(scaled_curvature)
+        try:
+            scaled_curvature = np.dot(param_diff[0], grad_diff[0])
+            scaled_curvature *= np.dot(grad_diff[0], grad_diff[0])
+            return identity_matrix * np.abs(scaled_curvature)
+        except:
+            print("Hessian initalisation failed, defaulting to identity.")
+            return np.eye(mcmc.model.no_params_to_estimate)

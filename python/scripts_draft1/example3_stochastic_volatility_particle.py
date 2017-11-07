@@ -5,9 +5,9 @@ import scripts_draft1.helper_stochastic_volatility as mh
 def main(seed_offset=0):
     """Runs the experiment."""
 
-    hessian_estimate = np.array([[ 0.00397222, -0.00228247,  0.00964908],
-                                 [-0.00228247,  0.00465944, -0.00961161],
-                                 [ 0.00964908, -0.00961161,  0.05049018]])
+    hessian_estimate = np.array([[ 0.05801254, -0.00821322,  0.00360056],
+                                 [-0.00821322,  0.03316326, -0.0170777 ],
+                                 [ 0.00360056, -0.0170777,   0.01858403]])
 
     pf_settings = {'no_particles': 2000,
                    'resampling_method': 'systematic',
@@ -20,9 +20,9 @@ def main(seed_offset=0):
 
     mh_settings = {'no_iters': 5000,
                    'no_burnin_iters': 1000,
-                   'step_size': 0.5,
+                   'step_size': 0.2,
                    'base_hessian': hessian_estimate,
-                   'initial_params': (1.4, 0.9, 0.6),
+                   'initial_params': (0.0, 0.5, 1.0),
                    'verbose': False,
                    'verbose_wait_enter': False,
                    'trust_region_size': None,
@@ -31,23 +31,23 @@ def main(seed_offset=0):
                    'hessian_correction_verbose': False,
                    'no_iters_between_progress_reports': 100,
                    'qn_memory_length': 20,
-                   'qn_initial_hessian': 'scaled_curvature',
                    'qn_strategy': None,
                    'qn_bfgs_curvature_cond': 'damped',
                    'qn_sr1_safe_parameterisation': False,
                    'qn_sr1_skip_limit': 1e-8,
+                   'qn_initial_hessian': 'scaled_gradient',
                    'qn_initial_hessian_scaling': 0.01,
                    'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
                    'qn_only_accepted_info': True,
                    'qn_accept_all_initial': True
                    }
 
-    sim_name = 'example3_mh_' + str(seed_offset)
-    mh.run('mh2',
-           mh_settings=mh_settings,
-           pf_settings=pf_settings,
-           sim_name=sim_name,
-           seed_offset=seed_offset)
+    # sim_name = 'example3_mh_' + str(seed_offset)
+    # mh.run('mh2',
+    #        mh_settings=mh_settings,
+    #        pf_settings=pf_settings,
+    #        sim_name=sim_name,
+    #        seed_offset=seed_offset)
 
     mh_settings.update({'qn_strategy': 'bfgs'})
     sim_name = 'example3_qmh_bfgs'
@@ -55,6 +55,16 @@ def main(seed_offset=0):
                 'Hessian such that the gradient gives a step of 0.01. Non-PD ',
                 'estimates are replaced with an empirical approximation of ',
                 'the Hessian.')
+    mh.run('qmh',
+           mh_settings=mh_settings,
+           pf_settings=pf_settings,
+           sim_name=sim_name,
+           sim_desc=sim_desc,
+           seed_offset=seed_offset)
+
+    mh_settings.update({'qn_strategy': 'sr1', 'hessian_correction': 'replace'})
+    sim_name = 'example3_qmh_sr1'
+    sim_desc = ('..')
     mh.run('qmh',
            mh_settings=mh_settings,
            pf_settings=pf_settings,

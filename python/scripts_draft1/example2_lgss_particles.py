@@ -31,7 +31,7 @@ def main(seed_offset=0):
                    'hessian_correction_verbose': False,
                    'no_iters_between_progress_reports': 1000,
                    'qn_memory_length': 20,
-                   'qn_initial_hessian': 'scaled_curvature',
+                   'qn_initial_hessian': 'scaled_gradient',
                    'qn_strategy': None,
                    'qn_bfgs_curvature_cond': 'damped',
                    'qn_sr1_safe_parameterisation': False,
