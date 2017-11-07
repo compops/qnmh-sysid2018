@@ -8,7 +8,7 @@ from libc.float cimport FLT_MAX
 from libc.stdlib cimport malloc, free
 
 DEF FixedLag = 10
-DEF NoParticles = 500
+DEF NoParticles = 1500
 DEF NoObs = 726
 DEF PI = 3.1415
 
