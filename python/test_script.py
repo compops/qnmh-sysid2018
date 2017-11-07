@@ -15,7 +15,7 @@ pf.run(cython_code=True, save_to_file=False)
 # mh.run(filter_method='kalman', alg_type='mh2', plotting=False)
 # mh.run(filter_method='particle', alg_type='mh2', plotting=False)
 
-import tests.qmh_linear_gaussian as qmh
+#import tests.qmh_linear_gaussian as qmh
 # qmh.run(filter_method='kalman', alg_type='bfgs', plotting=False)
 # qmh.run(filter_method='kalman', alg_type='sr1', plotting=False)
 # qmh.run(filter_method='particle', alg_type='bfgs', plotting=False)

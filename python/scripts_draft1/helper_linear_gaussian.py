@@ -37,12 +37,14 @@ def run(mh_settings, kf_settings=None, pf_settings=None, filter_method='kalman',
 
     if filter_method is 'kalman':
         mh.run(kf)
+        output_path='../results/example1'
     elif filter_method is 'particle':
+        output_path='../results/example2'
         mh.run(pf)
     else:
         raise NameError("Unknown filter_method (kalman/particle).")
 
     # Save to file
-    mh.save_to_file(output_path='../results',
+    mh.save_to_file(output_path=output_path,
                     sim_name=sim_name,
                     sim_desc=sim_desc)

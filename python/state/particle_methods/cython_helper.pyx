@@ -88,8 +88,8 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
 
     # Initialise variables
     cdef int *ancestors = <int *>malloc(NoParticles * sizeof(int))
-    cdef int *ancestry = <int *>malloc(FixedLag * NoParticles * sizeof(int))
-    cdef int *old_ancestry = <int *>malloc(FixedLag * NoParticles * sizeof(int))
+    cdef double *particle_history = <double *>malloc(FixedLag * NoParticles * sizeof(double))
+    cdef double *old_particle_history = <double *>malloc(FixedLag * NoParticles * sizeof(double))
 
     cdef double *particles = <double *>malloc(NoObs * NoParticles * sizeof(double))
     cdef double *weights = <double *>malloc(NoObs * NoParticles * sizeof(double))
@@ -101,7 +101,7 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     cdef double *unnorm_weights = <double *>malloc(NoParticles * sizeof(double))
     cdef double *shifted_weights = <double *>malloc(NoParticles * sizeof(double))
 
-    cdef double *gradient_at_i = <double *>malloc(4 * NoParticles * sizeof(double))
+    cdef double sub_gradient[4]
     cdef double gradient[4][NoObs]
 
     cdef double log_like = 0.0
@@ -116,6 +116,8 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     cdef double q_matrix = 1.0 / (sigmav * sigmav)
     cdef double r_matrix = 1.0 / (sigmae * sigmae)
     cdef double state_quad_term = 0.0
+    cdef double curr_particle = 0.0
+    cdef double next_particle = 0.0
 
     # Define counters
     cdef int i
@@ -130,8 +132,8 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     # Initialize ancestry
     for k in range(FixedLag):
         for j in range(NoParticles):
-            ancestry[k + j * FixedLag] = 0
-            old_ancestry[k + j * FixedLag] = 0
+            particle_history[k + j * FixedLag] = 0.0
+            old_particle_history[k + j * FixedLag] = 0.0
 
     for i in range(NoObs):
         filt_state_est[i] = 0.0
@@ -142,17 +144,16 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
             weights[i + j * NoObs] = 0.0
 
     for i in range(4):
+        sub_gradient[i] = 0.0
         for j in range(NoObs):
             gradient[i][j] = 0.0
-        for j in range(NoParticles):
-            gradient_at_i[i + j * 4] = 0.0
 
     # Generate initial state
     stDev = sigmav / sqrt(1.0 - (phi * phi))
     for j in range(NoParticles):
         particles[0 + j * NoObs] = mu + stDev * random_gaussian()
         weights[0 + j * NoObs] = 1.0 / NoParticles
-        ancestry[0 + j * FixedLag] = j
+        particle_history[0 + j * FixedLag] = particles[0 + j * NoObs]
 
         filt_state_est[0] = 0.0
         for j in range(NoParticles):
@@ -167,20 +168,17 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
         systematic(ancestors, weights_at_t)
 
         # Update ancestry
-        for k in range(FixedLag):
-            for j in range(NoParticles):
-                old_ancestry[k + j * FixedLag] = ancestry[k + j * FixedLag]
-
         for j in range(NoParticles):
-            idx = ancestors[j]
-            ancestry[0 + j * FixedLag] = idx
-            for k in range(1, FixedLag):
-                ancestry[k + j * FixedLag] = old_ancestry[k - 1 + idx * FixedLag]
+            for k in range(FixedLag):
+                old_particle_history[k + j * FixedLag] = particle_history[k + j * FixedLag]
 
         # Propagate particles
         for j in range(NoParticles):
             mean = mu + phi * (particles[i - 1 + ancestors[j] * NoObs] - mu)
             particles[i + j * NoObs] = mean + sigmav * random_gaussian()
+            particle_history[0 + j * FixedLag] = particles[i + j * NoObs]
+            for k in range(1, FixedLag):
+                particle_history[k + j * FixedLag] = old_particle_history[k - 1 + ancestors[j] * FixedLag]
 
         # Weight particles
         for j in range(NoParticles):
@@ -203,44 +201,53 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
         # Compute smoothed state
         if i >= FixedLag:
             for j in range(NoParticles):
-                idx = ancestry[FixedLag - 1 + j * FixedLag]
-                smo_state_est[i - FixedLag] += weights[i + j * NoObs] * particles[i - FixedLag + idx * NoObs]
+                curr_particle = particle_history[(FixedLag - 1) + j * FixedLag]
+                next_particle = particle_history[(FixedLag - 2) + j * FixedLag]
 
-                idx = ancestry[FixedLag - 2 + j * FixedLag]
-                idx_next = i - FixedLag + 1 * idx * NoObs
+                smo_state_est[i - FixedLag + 1] += weights[i + j * NoObs] * curr_particle
 
-                idx = ancestry[FixedLag - 1 + j * FixedLag]
-                idx_curr = i - FixedLag + idx * NoObs
+                state_quad_term = next_particle - mu - phi * (curr_particle - mu)
+                sub_gradient[0] = q_matrix * state_quad_term * (1.0 - phi)
+                sub_gradient[1] = q_matrix * state_quad_term * (curr_particle - mu) * (1.0 - phi**2)
+                sub_gradient[2] = q_matrix * state_quad_term * state_quad_term - 1.0
+                sub_gradient[3] = 0.0
 
-                state_quad_term = particles[idx_next] - mu - phi * (particles[idx_curr] - mu)
-                gradient_at_i[0 + j * 4] = q_matrix * state_quad_term * (1.0 - phi)
-                gradient_at_i[1 + j * 4] = q_matrix * state_quad_term * (particles[idx_curr] - mu) * (1.0 - phi**2)
-                gradient_at_i[2 + j * 4] = q_matrix * state_quad_term * state_quad_term - 1.0
-                gradient_at_i[3 + j * 4] = 0.0
-
-                gradient[0][i - FixedLag] += gradient_at_i[0 + j * 4] * weights[i + j * NoObs]
-                gradient[1][i - FixedLag] += gradient_at_i[1 + j * 4] * weights[i + j * NoObs]
-                gradient[2][i - FixedLag] += gradient_at_i[2 + j * 4] * weights[i + j * NoObs]
-                gradient[3][i - FixedLag] += gradient_at_i[3 + j * 4] * weights[i + j * NoObs]
+                gradient[0][i - FixedLag + 1] += sub_gradient[0] * weights[i + j * NoObs]
+                gradient[1][i - FixedLag + 1] += sub_gradient[1] * weights[i + j * NoObs]
+                gradient[2][i - FixedLag + 1] += sub_gradient[2] * weights[i + j * NoObs]
+                gradient[3][i - FixedLag + 1] += sub_gradient[3] * weights[i + j * NoObs]
 
         # Estimate log-likelihood
         log_like += max_weight + log(norm_factor) - log(NoParticles)
 
-    for i in range(NoObs + FixedLag):
+    # Estimate gradients of the log joint distribution
+    for i in range(NoObs - FixedLag, NoObs):
+        idx  = NoObs - i - 1
         for j in range(NoParticles):
-            idx = ancestry[FixedLag - 1 + j * FixedLag]
-            smo_state_est[i - FixedLag] += weights[NoObs - 1 + j * NoObs] * particles[i - FixedLag + idx * NoObs]
+            curr_particle = particle_history[idx + j * FixedLag]
+            smo_state_est[i] +=  weights[NoObs - 1 + j * NoObs] * curr_particle
 
-    smo_state_est[NoObs - 1] = filt_state_est[NoObs - 1]
+            if (idx - 1) >= 0:
+                next_particle = particle_history[idx - 1 + j * FixedLag]
+                state_quad_term = next_particle - mu - phi * (curr_particle - mu)
+                sub_gradient[0] = q_matrix * state_quad_term * (1.0 - phi)
+                sub_gradient[1] = q_matrix * state_quad_term * (curr_particle - mu) * (1.0 - phi**2)
+                sub_gradient[2] = q_matrix * state_quad_term * state_quad_term - 1.0
+                sub_gradient[3] = 0.0
+
+                gradient[0][i - FixedLag + 1] += sub_gradient[0] * weights[i + j * NoObs]
+                gradient[1][i - FixedLag + 1] += sub_gradient[1] * weights[i + j * NoObs]
+                gradient[2][i - FixedLag + 1] += sub_gradient[2] * weights[i + j * NoObs]
+                gradient[3][i - FixedLag + 1] += sub_gradient[3] * weights[i + j * NoObs]
+
     free(particles)
     free(weights)
     free(weights_at_t)
-    free(ancestry)
-    free(old_ancestry)
+    free(particle_history)
+    free(old_particle_history)
     free(ancestors)
     free(unnorm_weights)
     free(shifted_weights)
-    free(gradient_at_i)
 
     # Compile the rest of the output
     return filt_state_est, smo_state_est, log_like, gradient
