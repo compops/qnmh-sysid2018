@@ -32,20 +32,24 @@ class ParticleMethodsCythonLGSS(BaseStateInference):
         self.name = "Fixed-lag particle smoother (Cython)"
         obs = np.array(model.obs.flatten())
         params = model.get_all_params()
-        xhatf, xhats, ll = flps_lgss(obs, mu=params[0], phi=params[1], sigmav=params[2], sigmae=params[3])
+        xhatf, xhats, ll, gradient = flps_lgss(obs, mu=params[0],
+                                               phi=params[1], sigmav=params[2],
+                                               sigmae=params[3])
 
-        # obs = np.array(model.obs.flatten())
-        # res = flps_lgss(obs=obs,
-        #                 params=model.get_all_params(),
-        #                 no_particles=self.settings['no_particles'],
-        #                 fixed_lag=self.settings['fixed_lag'],
-        #                 ancestors=self.results['ancestors'].astype(np.int),
-        #                 particles=self.results['particles'],
-        #                 weights=self.results['weights'])
-        # self._estimate_gradient_and_hessian(model)
+        # Compute estimate of gradient and Hessian
+        gradient = np.array(gradient).reshape((4, model.no_obs+1))
+        log_joint_gradient_estimate = np.sum(gradient, axis=1)
+
+        part1 = np.mat(gradient).transpose()
+        part1 = np.dot(np.mat(gradient), part1)
+        part2 = np.mat(log_joint_gradient_estimate)
+        part2 = np.dot(np.mat(log_joint_gradient_estimate).transpose(), part2)
+        log_joint_hessian_estimate = part1 - part2 / model.no_obs
 
         self.results.update({'filt_state_est': np.array(xhatf).reshape((model.no_obs+1, 1))})
         self.results.update({'log_like': ll})
         self.results.update({'smo_state_est': np.array(xhats).reshape((model.no_obs+1, 1))})
-        self.results.update({'gradient_internal': np.array(0.0)})
-        self.results.update({'hessian_internal': np.array(1.0)})
+        self.results.update({'log_joint_gradient_estimate': log_joint_gradient_estimate})
+        self.results.update({'log_joint_hessian_estimate': log_joint_hessian_estimate})
+
+        self._estimate_gradient_and_hessian(model)

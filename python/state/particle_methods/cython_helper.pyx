@@ -87,18 +87,23 @@ def bpf_lgss(double [:] obs, double mu, double phi, double sigmav, double sigmae
 def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigmae):
 
     # Initialise variables
-    cdef int[NoParticles] ancestors
+    cdef int *ancestors = <int *>malloc(NoParticles * sizeof(int))
     cdef int *ancestry = <int *>malloc(FixedLag * NoParticles * sizeof(int))
     cdef int *old_ancestry = <int *>malloc(FixedLag * NoParticles * sizeof(int))
+
     cdef double *particles = <double *>malloc(NoObs * NoParticles * sizeof(double))
     cdef double *weights = <double *>malloc(NoObs * NoParticles * sizeof(double))
     cdef double *weights_at_t = <double *>malloc(NoParticles * sizeof(double))
+
     cdef double[NoObs] filt_state_est
     cdef double[NoObs] smo_state_est
-    cdef double[NoParticles] unnorm_weights
-    cdef double[NoParticles] shifted_weights
-    cdef double[4][NoParticles] gradient_at_i
-    cdef double[4] log_joint_gradient_estimate
+
+    cdef double *unnorm_weights = <double *>malloc(NoParticles * sizeof(double))
+    cdef double *shifted_weights = <double *>malloc(NoParticles * sizeof(double))
+
+    cdef double *gradient_at_i = <double *>malloc(4 * NoParticles * sizeof(double))
+    cdef double gradient[4][NoObs]
+
     cdef double log_like = 0.0
 
     # Define helpers
@@ -108,12 +113,19 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     cdef double norm_factor
     cdef double foo_double
 
+    cdef double q_matrix = 1.0 / (sigmav * sigmav)
+    cdef double r_matrix = 1.0 / (sigmae * sigmae)
+    cdef double state_quad_term = 0.0
+
     # Define counters
     cdef int i
     cdef int j
     cdef int current_lag
     cdef int k
     cdef int idx
+    cdef int idx_curr
+    cdef int idx_next
+    cdef int idx_t
 
     # Initialize ancestry
     for k in range(FixedLag):
@@ -128,6 +140,12 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
             weights_at_t[j] = 0.0
             particles[i + j * NoObs] = 0.0
             weights[i + j * NoObs] = 0.0
+
+    for i in range(4):
+        for j in range(NoObs):
+            gradient[i][j] = 0.0
+        for j in range(NoParticles):
+            gradient_at_i[i + j * 4] = 0.0
 
     # Generate initial state
     stDev = sigmav / sqrt(1.0 - (phi * phi))
@@ -188,22 +206,44 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
                 idx = ancestry[FixedLag - 1 + j * FixedLag]
                 smo_state_est[i - FixedLag] += weights[i + j * NoObs] * particles[i - FixedLag + idx * NoObs]
 
+                idx = ancestry[FixedLag - 2 + j * FixedLag]
+                idx_next = i - FixedLag + 1 * idx * NoObs
+
+                idx = ancestry[FixedLag - 1 + j * FixedLag]
+                idx_curr = i - FixedLag + idx * NoObs
+
+                state_quad_term = particles[idx_next] - mu - phi * (particles[idx_curr] - mu)
+                gradient_at_i[0 + j * 4] = q_matrix * state_quad_term * (1.0 - phi)
+                gradient_at_i[1 + j * 4] = q_matrix * state_quad_term * (particles[idx_curr] - mu) * (1.0 - phi**2)
+                gradient_at_i[2 + j * 4] = q_matrix * state_quad_term * state_quad_term - 1.0
+                gradient_at_i[3 + j * 4] = 0.0
+
+                gradient[0][i - FixedLag] += gradient_at_i[0 + j * 4] * weights[i + j * NoObs]
+                gradient[1][i - FixedLag] += gradient_at_i[1 + j * 4] * weights[i + j * NoObs]
+                gradient[2][i - FixedLag] += gradient_at_i[2 + j * 4] * weights[i + j * NoObs]
+                gradient[3][i - FixedLag] += gradient_at_i[3 + j * 4] * weights[i + j * NoObs]
+
         # Estimate log-likelihood
         log_like += max_weight + log(norm_factor) - log(NoParticles)
 
-    for i in range(NoObs-FixedLag, NoObs):
+    for i in range(NoObs + FixedLag):
         for j in range(NoParticles):
-            idx = ancestry[NoObs - i - 1 + j * FixedLag]
-            smo_state_est[i] += weights[NoObs - 1 + j * NoObs] * particles[i + idx * NoObs]
+            idx = ancestry[FixedLag - 1 + j * FixedLag]
+            smo_state_est[i - FixedLag] += weights[NoObs - 1 + j * NoObs] * particles[i - FixedLag + idx * NoObs]
 
+    smo_state_est[NoObs - 1] = filt_state_est[NoObs - 1]
     free(particles)
     free(weights)
     free(weights_at_t)
     free(ancestry)
     free(old_ancestry)
+    free(ancestors)
+    free(unnorm_weights)
+    free(shifted_weights)
+    free(gradient_at_i)
 
     # Compile the rest of the output
-    return filt_state_est, smo_state_est, log_like
+    return filt_state_est, smo_state_est, log_like, gradient
 
 @cython.cdivision(True)
 @cython.boundscheck(False)

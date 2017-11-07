@@ -4,6 +4,7 @@ results-tests/
 *.pdf
 *.json
 *.txt
+*.html
 
 .vscode/
 .R~

@@ -36,14 +36,13 @@ def run(cython_code=False, save_to_file=False):
                          'generate_initial_state': True,
                          'initial_state': 0.0
                         }
-    #pf = ParticleMethods(particle_settings)
-    pf = ParticleMethodsCythonLGSS(particle_settings)
+    if cython_code:
+        pf = ParticleMethodsCythonLGSS(particle_settings)
+    else:
+        pf = ParticleMethods(particle_settings)
 
     start_time = time.time()
-    if cython_code:
-        pf.flps_lgss_cython(sys_model)
-    else:
-        pf.smoother(sys_model)
+    pf.smoother(sys_model)
     print("Run time of smoother:.")
     print("--- %s seconds ---" % (time.time() - start_time))
 
@@ -66,7 +65,7 @@ def run(cython_code=False, save_to_file=False):
         plt.xlabel("time")
         plt.title('State estimation')
         plt.show()
-    return None
+
     if save_to_file:
         no_reps = 100
     else:
@@ -95,10 +94,7 @@ def run(cython_code=False, save_to_file=False):
     for i in range(len(grid_mu)):
         for j in range(no_reps):
             sys_model.store_params(grid_mu[i])
-            if cython_code:
-                pf.flps_lgss_cython(sys_model)
-            else:
-                pf.smoother(sys_model)
+            pf.smoother(sys_model)
             log_like_mu[i, j] = pf.results['log_like']
             gradient_mu[i, j] = pf.results['gradient_internal'].flatten()
             gradient_mu[i, j] /= (1.0 - sys_model.params['phi'])
@@ -120,10 +116,7 @@ def run(cython_code=False, save_to_file=False):
     for i in range(len(grid_phi)):
         for j in range(no_reps):
             sys_model.store_params(grid_phi[i])
-            if cython_code:
-                pf.flps_lgss_cython(sys_model)
-            else:
-                pf.smoother(sys_model)
+            pf.smoother(sys_model)
             log_like_phi[i, j] = pf.results['log_like']
             gradient_phi[i, j] = pf.results['gradient_internal'].flatten()
             gradient_phi[i, j] /= (1.0 - grid_phi[i]**2)
@@ -144,10 +137,7 @@ def run(cython_code=False, save_to_file=False):
     for i in range(len(grid_sigmav)):
         for j in range(no_reps):
             sys_model.store_params(grid_sigmav[i])
-            if cython_code:
-                pf.flps_lgss_cython(sys_model)
-            else:
-                pf.smoother(sys_model)
+            pf.smoother(sys_model)
             log_like_sigmav[i, j] = pf.results['log_like']
             gradient_sigmav[i, j] = pf.results['gradient_internal'].flatten()
             gradient_sigmav[i, j] /= grid_sigmav[i]
