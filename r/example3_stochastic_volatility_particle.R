@@ -7,7 +7,7 @@ algorithms <- list.dirs("../results/example3/", full.names = FALSE)[-1]
 offset <- c(0)
 noItersToPlot <- 1000
 savePlotToFile <- TRUE
-paramsScale <- c(0.0, 2.0, 0.5, 1.0, 0.0, 1.0)
+paramsScale <- c(0.0, 2.5, 0.85, 1.0, 0.2, 0.7)
 
 for (i in 1:length(algorithms)) {
   for (j in 1:length(offset)) {
@@ -34,6 +34,7 @@ for (i in 1:length(algorithms)) {
                             noItersToPlot=noItersToPlot,
                             savePlotToFile=savePlotToFile,
                             paramsScale=paramsScale,
-                            folderToSaveTo="../results/example3/")
+                            folderToSaveTo="../results/")
   }
 }
+

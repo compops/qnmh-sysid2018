@@ -6,7 +6,7 @@ from parameter.mcmc.metropolis_hastings import MetropolisHastings
 from state.particle_methods.standard import ParticleMethods
 from state.particle_methods.cython_lgss import ParticleMethodsCythonLGSS
 from state.kalman_methods.standard import KalmanMethods
-from state.kalman_methods.cython_code import KalmanMethodsCython
+from state.kalman_methods.cython import KalmanMethodsCython
 
 def run(cython_code=True, filter_method='kalman', alg_type='bfgs',
         plotting=True, file_tag=None, **kwargs):
@@ -92,6 +92,6 @@ def run(cython_code=True, filter_method='kalman', alg_type='bfgs',
         sim_name = 'test_linear_gaussian_' + filter_method + '_' + 'qmh_' + alg_type
         if file_tag:
             sim_name += '_' + file_tag
-                mh.save_to_file(output_path='../results-tests/qmh-linear-gaussian/',
-                        sim_name=sim_name,
-                        sim_desc='...')
+        mh.save_to_file(output_path='../results-tests/qmh-linear-gaussian/',
+                sim_name=sim_name,
+                sim_desc='...')

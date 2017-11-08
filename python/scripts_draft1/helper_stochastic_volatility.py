@@ -9,7 +9,7 @@ from parameter.mcmc.metropolis_hastings import MetropolisHastings
 def run(mh_version, mh_settings, pf_settings, cython_code=True, sim_name='test',
         sim_desc='', seed_offset=0):
 
-    np.random.seed(87655678 + seed_offset)
+    np.random.seed(87655678 + int(seed_offset))
 
     # System model
     sys_model = StochasticVolatilityModel()

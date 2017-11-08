@@ -12,7 +12,7 @@ def run(mh_settings, cython_code=True, kf_settings=None, pf_settings=None,
         seed_offset=0):
 
     # Set random seed for repreducibility
-    np.random.seed(87655678 + seed_offset)
+    np.random.seed(87655678 + int(seed_offset))
 
     # System model
     sys_model = LinearGaussianModel()
