@@ -1,6 +1,7 @@
 """Metropolis-Hastings algorithm."""
 import warnings
 import numpy as np
+import time
 
 from helpers.distributions import multivariate_gaussian
 from helpers.cov_matrix import is_valid_covariance_matrix
@@ -230,6 +231,8 @@ class MetropolisHastings(BaseParameterInference):
                 Nothing.
 
         """
+        self.start_time = time.time()
+
         print_greeting(self, state_estimator)
 
         if self.use_grad_info or self.use_hess_info:
@@ -270,6 +273,8 @@ class MetropolisHastings(BaseParameterInference):
                 print("")
 
         print("Run of MH algorithm complete...")
+        print("It took: {:.2f} seconds to run this code.".format((time.time() - self.start_time)))
+        self.time_per_iteration = (time.time() - self.start_time) / no_iters
 
     def _accept_params(self):
         """ Record the accepted parameters. """

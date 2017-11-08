@@ -116,6 +116,11 @@ def correct_hessian(estimate, mcmc):
     if not strategy:
         return estimate
 
+    # Check for NaNs or Infs
+    if isinstance(estimate, np.ndarray):
+        if np.any(np.isinf(estimate)) or np.any(np.isnan(estimate)):
+            return False
+
     if estimate is None or not is_psd(estimate):
         mcmc.no_hessians_corrected += 1
         mcmc.iter_hessians_corrected.append(mcmc.current_iter)

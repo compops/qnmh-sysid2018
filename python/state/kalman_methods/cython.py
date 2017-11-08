@@ -54,7 +54,13 @@ class KalmanMethodsCython(BaseStateInference):
         part1 = np.dot(np.mat(grad), part1)
         part2 = np.mat(log_joint_gradient_estimate)
         part2 = np.dot(np.mat(log_joint_gradient_estimate).transpose(), part2)
-        log_joint_hessian_estimate = part1 - part2 / model.no_obs
+
+        try:
+            log_joint_hessian_estimate = part1 - part2 / model.no_obs
+        except RuntimeWarning:
+            print(part1)
+            print(part2)
+            log_joint_hessian_estimate = np.eye(model.no_params_to_estimate)
 
         self.results.update({'pred_state_est': np.array(xhatp).reshape((model.no_obs+1, 1))})
         self.results.update({'pred_state_cov': np.array(Pp).reshape((model.no_obs+1, 1))})

@@ -42,58 +42,23 @@ def main(seed_offset=0):
                    'qn_accept_all_initial': True
                    }
 
-    # sim_name = 'example3_mh_' + str(seed_offset)
-    # mh.run('mh2',
-    #        mh_settings=mh_settings,
-    #        pf_settings=pf_settings,
-    #        sim_name=sim_name,
-    #        seed_offset=seed_offset)
-
-    mh_settings.update({'qn_strategy': 'bfgs'})
-    sim_name = 'example3_qmh_bfgs'
-    sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
-                'Hessian such that the gradient gives a step of 0.01. Non-PD ',
-                'estimates are replaced with an empirical approximation of ',
-                'the Hessian.')
-    mh.run('qmh',
-           mh_settings=mh_settings,
-           pf_settings=pf_settings,
-           sim_name=sim_name,
-           sim_desc=sim_desc,
-           seed_offset=seed_offset)
-
-
-    mh_settings.update({'qn_strategy': 'bfgs',
-                        'qn_only_accepted_info': False})
-    sim_name = 'example3_qmh_bfgs_allinfo'
-    sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
-                'Hessian such that the gradient gives a step of 0.01. Non-PD ',
-                'estimates are replaced with an empirical approximation of ',
-                'the Hessian.')
-    mh.run('qmh',
-           mh_settings=mh_settings,
-           pf_settings=pf_settings,
-           sim_name=sim_name,
-           sim_desc=sim_desc,
-           seed_offset=seed_offset)
+#    mh_settings.update({'qn_strategy': 'bfgs'})
+#    sim_name = 'example3_qmh_bfgs'
+#    sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
+#                'Hessian such that the gradient gives a step of 0.01. Non-PD ',
+#                'estimates are replaced with an empirical approximation of ',
+#                'the Hessian.')
+#    mh.run('qmh',
+#           mh_settings=mh_settings,
+#           pf_settings=pf_settings,
+#           sim_name=sim_name,
+#           sim_desc=sim_desc,
+#           seed_offset=seed_offset)
 
 
     mh_settings.update({'qn_strategy': 'sr1',
                         'hessian_correction': 'replace'})
     sim_name = 'example3_qmh_sr1'
-    sim_desc = ('..')
-    mh.run('qmh',
-           mh_settings=mh_settings,
-           pf_settings=pf_settings,
-           sim_name=sim_name,
-           sim_desc=sim_desc,
-           seed_offset=seed_offset)
-
-
-    mh_settings.update({'qn_strategy': 'sr1',
-                        'hessian_correction': 'replace',
-                        'qn_only_accepted_info': False})
-    sim_name = 'example3_qmh_sr1_allinfo'
     sim_desc = ('..')
     mh.run('qmh',
            mh_settings=mh_settings,

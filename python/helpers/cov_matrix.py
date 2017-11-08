@@ -16,6 +16,11 @@ def is_psd(cov_matrix):
            True if the array is positive semi-definite and False otherwise.
 
     """
+    # Check for NaNs or Infs
+    if isinstance(cov_matrix, np.ndarray):
+        if np.any(np.isinf(cov_matrix)) or np.any(np.isnan(cov_matrix)):
+            return False
+
     return np.all(np.linalg.eigvals(cov_matrix) > 0)
 
 def is_valid_covariance_matrix(cov_matrix):
@@ -37,8 +42,12 @@ def is_valid_covariance_matrix(cov_matrix):
         return False
 
     # Check eigenvalues
-    eig_values = eigh(cov_matrix, lower=True, check_finite=True)[0]
-    eps = _eigvalsh_to_eps(eig_values, None, None)
+    try:
+        eig_values = eigh(cov_matrix, lower=True, check_finite=True)[0]
+        eps = _eigvalsh_to_eps(eig_values, None, None)
+    except ValueError:
+        print(cov_matrix)
+        return False
 
     # Singular matrix (too small eigenvalues)
     if np.min(eig_values) < -eps:

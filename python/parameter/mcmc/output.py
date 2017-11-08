@@ -21,10 +21,13 @@ def print_progress_report(mcmc, max_iact_lag=100):
 
     """
     iter = mcmc.current_iter
+    mean_time_per_iter = (time.time() - mcmc.start_time) / iter
+    est_time_remaining = mean_time_per_iter * (mcmc.settings['no_iters'] - iter)
 
     print("###################################################################")
-    print(" iter: " + str(iter + 1) + " of : "
+    print(" Iteration: " + str(iter + 1) + " of : "
           + str(mcmc.settings['no_iters']) + " completed.")
+    print(" Time per iteration: {:.3f}s and estimated time remaining: {:.3f}s.".format(mean_time_per_iter, est_time_remaining))
     print("")
     print(" Current state of the Markov chain:")
     print(["%.4f" % v for v in mcmc.params[iter - 1, :]])
@@ -154,6 +157,7 @@ def compile_results(mcmc, sim_name=None, sim_desc=None):
     mcmcout.update({'simulation_description': sim_desc})
     mcmcout.update({'simulation_name': sim_name})
     mcmcout.update({'simulation_time': current_time})
+    mcmcout.update({'time_per_iteration': mcmc.time_per_iteration})
 
     data = {}
     data.update({'observations': mcmc.model.obs})

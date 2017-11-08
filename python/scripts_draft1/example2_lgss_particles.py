@@ -22,7 +22,7 @@ def main(seed_offset=0):
                    'no_burnin_iters': 3000,
                    'step_size': 0.5,
                    'base_hessian': hessian_estimate,
-                   'initial_params': (0.0, 0.1, 0.2),
+                   'initial_params': (0.2, 0.5, 1.0),
                    'verbose': False,
                    'verbose_wait_enter': False,
                    'trust_region_size': None,
@@ -42,7 +42,18 @@ def main(seed_offset=0):
                    'qn_accept_all_initial': True
                    }
 
-    mh_settings.update({'step_size': 0.1})
+    mh_settings.update({'step_size': 2.562 / np.sqrt(3)})
+    sim_name = 'example2_mh0pre_' + str(seed_offset)
+    mh.run(mh_settings=mh_settings,
+           cython_code=True,
+           kf_settings=None,
+           pf_settings=pf_settings,
+           filter_method='particle',
+           alg_type='mh0',
+           sim_name=sim_name,
+           seed_offset=seed_offset)
+
+    mh_settings.update({'step_size': 1.125 / np.sqrt(3**(1/3))})
     sim_name = 'example2_mh1pre_' + str(seed_offset)
     mh.run(mh_settings=mh_settings,
            cython_code=True,
@@ -66,6 +77,23 @@ def main(seed_offset=0):
 
     mh_settings.update({'qn_strategy': 'bfgs'})
     sim_name = 'example2_mh_bfgs_' + str(seed_offset)
+    sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
+                'Hessian such that the gradient gives a step of 0.01. Non-PD ',
+                'estimates are replaced with an empirical approximation of the ',
+                'Hessian.')
+    mh.run(mh_settings=mh_settings,
+           cython_code=True,
+           kf_settings=None,
+           pf_settings=pf_settings,
+           filter_method='particle',
+           alg_type='qmh',
+           sim_name=sim_name,
+           seed_offset=seed_offset)
+
+    mh_settings.update({'qn_strategy': 'bfgs',
+                        'qn_bfgs_curvature_cond': 'enforce',
+                        'hessian_correction': 'replace'})
+    sim_name = 'example2_mh_bfgs_' + str(seed_offset) + '_enforce_replace'
     sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
                 'Hessian such that the gradient gives a step of 0.01. Non-PD ',
                 'estimates are replaced with an empirical approximation of the ',
