@@ -40,11 +40,15 @@ class ParticleMethodsCythonLGSS(BaseStateInference):
         gradient = np.array(gradient).reshape((model.no_params, model.no_obs+1))
         log_joint_gradient_estimate = np.sum(gradient, axis=1)
 
-        part1 = np.mat(gradient).transpose()
-        part1 = np.dot(np.mat(gradient), part1)
-        part2 = np.mat(log_joint_gradient_estimate)
-        part2 = np.dot(np.mat(log_joint_gradient_estimate).transpose(), part2)
-        log_joint_hessian_estimate = part1 - part2 / model.no_obs
+        try:
+            part1 = np.mat(gradient).transpose()
+            part1 = np.dot(np.mat(gradient), part1)
+            part2 = np.mat(log_joint_gradient_estimate)
+            part2 = np.dot(np.mat(log_joint_gradient_estimate).transpose(), part2)
+            log_joint_hessian_estimate = part1 - part2 / model.no_obs
+        except:
+            print("Numerical problems in Segal Weinsten estimator, returning identity.")
+            log_joint_hessian_estimate = np.eye(model.no_params)
 
         self.results.update({'filt_state_est': np.array(xhatf).reshape((model.no_obs+1, 1))})
         self.results.update({'log_like': ll})

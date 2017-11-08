@@ -153,10 +153,14 @@ class ParticleMethods(BaseStateInference):
         if self.settings['estimate_gradient']:
             log_joint_gradient_estimate = np.sum(smo_gradient_est, axis=1)
 
-            part1 = np.mat(smo_gradient_est).transpose()
-            part1 = np.dot(np.mat(smo_gradient_est), part1)
-            part2 = np.matmul(smo_gradient_est, smo_gradient_est.transpose())
-            log_joint_hessian_estimate = part1 - part2 / no_obs
+            try:
+                part1 = np.mat(smo_gradient_est).transpose()
+                part1 = np.dot(np.mat(smo_gradient_est), part1)
+                part2 = np.matmul(smo_gradient_est, smo_gradient_est.transpose())
+                log_joint_hessian_estimate = part1 - part2 / no_obs
+            except:
+                print("Numerical problems in Segal Weinsten estimator, returning identity.")
+                log_joint_hessian_estimate = np.eye(model.no_params)
 
         self.results.update({'smo_state_est': smo_state_est,
                              'log_joint_gradient_estimate': log_joint_gradient_estimate,
