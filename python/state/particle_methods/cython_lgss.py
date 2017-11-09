@@ -24,17 +24,21 @@ class ParticleMethodsCythonLGSS(BaseStateInference):
         self.name = "Bootstrap particle filter (Cython)"
         obs = np.array(model.obs.flatten())
         params = model.get_all_params()
-        state, ll = bpf_lgss(obs, mu=params[0], phi=params[1], sigmav=params[2], sigmae=params[3])
-        self.results.update({'filt_state_est': np.array(state).reshape((model.no_obs+1, 1)), 'log_like': ll})
+        xhatf, ll, xtraj = bpf_lgss(obs, mu=params[0], phi=params[1],
+                                    sigmav=params[2], sigmae=params[3])
+        self.results.update({'filt_state_est': np.array(xhatf).reshape((model.no_obs+1, 1))})
+        self.results.update({'log_like': ll})
+        self.results.update({'state_trajectory': np.array(xtraj).reshape((model.no_obs+1, 1))})
 
     def smoother(self, model):
         """Fixed-lag particle smoother for linear Gaussian model."""
         self.name = "Fixed-lag particle smoother (Cython)"
         obs = np.array(model.obs.flatten())
         params = model.get_all_params()
-        xhatf, xhats, ll, gradient = flps_lgss(obs, mu=params[0],
-                                               phi=params[1], sigmav=params[2],
-                                               sigmae=params[3])
+        xhatf, xhats, ll, gradient, xtraj = flps_lgss(obs, mu=params[0],
+                                                      phi=params[1],
+                                                      sigmav=params[2],
+                                                      sigmae=params[3])
 
         # Compute estimate of gradient and Hessian
         gradient = np.array(gradient).reshape((model.no_params, model.no_obs+1))
@@ -47,12 +51,13 @@ class ParticleMethodsCythonLGSS(BaseStateInference):
             part2 = np.dot(np.mat(log_joint_gradient_estimate).transpose(), part2)
             log_joint_hessian_estimate = part1 - part2 / model.no_obs
         except:
-            print("Numerical problems in Segal Weinsten estimator, returning identity.")
+            print("Numerical problems in Segal-Weinstein estimator, returning identity.")
             log_joint_hessian_estimate = np.eye(model.no_params)
 
         self.results.update({'filt_state_est': np.array(xhatf).reshape((model.no_obs+1, 1))})
-        self.results.update({'log_like': ll})
+        self.results.update({'state_trajectory': np.array(xtraj).reshape((model.no_obs+1, 1))})
         self.results.update({'smo_state_est': np.array(xhats).reshape((model.no_obs+1, 1))})
+        self.results.update({'log_like': ll})
         self.results.update({'log_joint_gradient_estimate': log_joint_gradient_estimate})
         self.results.update({'log_joint_hessian_estimate': log_joint_hessian_estimate})
 

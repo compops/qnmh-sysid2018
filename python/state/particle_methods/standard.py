@@ -85,12 +85,12 @@ class ParticleMethods(BaseStateInference):
         # Sample a trajectory
         particle_index = np.random.choice(no_particles, 1, p=weights[:, -1])
         ancestory_trajectory = ancestors_resamp[particle_index, -1].astype(int)
-        particle_traj = particles[ancestory_trajectory, :]
+        state_trajectory = particles[ancestory_trajectory, :]
 
         # Compile the rest of the output
         self.results.update({'filt_state_est': filt_state_est,
                              'log_like': np.sum(log_like),
-                             'particle_traj': particle_traj
+                             'state_trajectory': state_trajectory
                             })
         self.particles = particles
         self.weights = weights
@@ -159,7 +159,7 @@ class ParticleMethods(BaseStateInference):
                 part2 = np.matmul(smo_gradient_est, smo_gradient_est.transpose())
                 log_joint_hessian_estimate = part1 - part2 / no_obs
             except:
-                print("Numerical problems in Segal Weinsten estimator, returning identity.")
+                print("Numerical problems in Segal-Weinstein estimator, returning identity.")
                 log_joint_hessian_estimate = np.eye(model.no_params)
 
         self.results.update({'smo_state_est': smo_state_est,

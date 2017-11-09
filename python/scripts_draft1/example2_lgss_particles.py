@@ -53,7 +53,7 @@ def main(seed_offset=0):
            sim_name=sim_name,
            seed_offset=seed_offset)
 
-    mh_settings.update({'step_size': 1.125 / np.sqrt(3**(1/3))})
+    mh_settings.update({'step_size': 0.5 * 1.125 / np.sqrt(3**(1/3))})
     sim_name = 'example2_mh1pre_' + str(seed_offset)
     mh.run(mh_settings=mh_settings,
            cython_code=True,
@@ -65,35 +65,9 @@ def main(seed_offset=0):
            seed_offset=seed_offset)
 
     mh_settings.update({'step_size': 0.5})
-    sim_name = 'example2_mh2sw_' + str(seed_offset)
-    mh.run(mh_settings=mh_settings,
-           cython_code=True,
-           kf_settings=None,
-           pf_settings=pf_settings,
-           filter_method='particle',
-           alg_type='mh2',
-           sim_name=sim_name,
-           seed_offset=seed_offset)
-
+    mh_settings.update({'base_hessian': 0.01**2 * np.exp(3)})
     mh_settings.update({'qn_strategy': 'bfgs'})
     sim_name = 'example2_mh_bfgs_' + str(seed_offset)
-    sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
-                'Hessian such that the gradient gives a step of 0.01. Non-PD ',
-                'estimates are replaced with an empirical approximation of the ',
-                'Hessian.')
-    mh.run(mh_settings=mh_settings,
-           cython_code=True,
-           kf_settings=None,
-           pf_settings=pf_settings,
-           filter_method='particle',
-           alg_type='qmh',
-           sim_name=sim_name,
-           seed_offset=seed_offset)
-
-    mh_settings.update({'qn_strategy': 'bfgs',
-                        'qn_bfgs_curvature_cond': 'enforce',
-                        'hessian_correction': 'replace'})
-    sim_name = 'example2_mh_bfgs_' + str(seed_offset) + '_enforce_replace'
     sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
                 'Hessian such that the gradient gives a step of 0.01. Non-PD ',
                 'estimates are replaced with an empirical approximation of the ',
@@ -112,42 +86,6 @@ def main(seed_offset=0):
                         'qn_bfgs_curvature_cond': 'ignore',
                         'hessian_correction': 'replace'})
     sim_name = 'example2_mh_bfgs_' + str(seed_offset) + '_ignore_replace'
-    sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
-                'Hessian such that the gradient gives a step of 0.01. Non-PD ',
-                'estimates are replaced with an empirical approximation of the ',
-                'Hessian.')
-    mh.run(mh_settings=mh_settings,
-           cython_code=True,
-           kf_settings=None,
-           pf_settings=pf_settings,
-           filter_method='particle',
-           alg_type='qmh',
-           sim_name=sim_name,
-           seed_offset=seed_offset)
-
-    mh_settings.update({'qn_strategy': 'bfgs',
-                        'qn_only_accepted_info': True,
-                        'qn_bfgs_curvature_cond': 'ignore',
-                        'hessian_correction': 'regularise'})
-    sim_name = 'example2_mh_bfgs_' + str(seed_offset) + '_ignore_reg'
-    sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
-                'Hessian such that the gradient gives a step of 0.01. Non-PD ',
-                'estimates are replaced with an empirical approximation of the ',
-                'Hessian.')
-    mh.run(mh_settings=mh_settings,
-           cython_code=True,
-           kf_settings=None,
-           pf_settings=pf_settings,
-           filter_method='particle',
-           alg_type='qmh',
-           sim_name=sim_name,
-           seed_offset=seed_offset)
-
-    mh_settings.update({'qn_strategy': 'bfgs',
-                        'qn_only_accepted_info': True,
-                        'qn_bfgs_curvature_cond': 'ignore',
-                        'hessian_correction': 'flip'})
-    sim_name = 'example2_mh_bfgs_' + str(seed_offset) + '_ignore_flip'
     sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
                 'Hessian such that the gradient gives a step of 0.01. Non-PD ',
                 'estimates are replaced with an empirical approximation of the ',

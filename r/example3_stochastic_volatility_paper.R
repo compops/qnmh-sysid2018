@@ -1,15 +1,17 @@
 setwd("~/src/qnmh-sysid2018/r")
 library("jsonlite")
+
 library("RColorBrewer")
-source("helper_plotting.R")
+plotColors = brewer.pal(8, "Dark2")
+plotColors = c(plotColors, plotColors)
 
 algorithms <-
   list.dirs("../results/example3/", full.names = FALSE)[-1]
 
 offset <- c(0)
-noItersToPlot <- 1000
+noItersToPlot <- 350
 savePlotToFile <- TRUE
-paramsScale <- c(-0.5, 2.5, 0.8, 1.0, 0.2, 0.8)
+paramsScale <- c(-0.5, 2.5, 0.9, 1.0, 0.2, 0.7)
 
 algorithm <- "example3_qmh_bfgs"
 
@@ -33,10 +35,6 @@ settings <- read_json(paste(
   sep = ""
 ),
 simplifyVector = TRUE)
-
-plotColors = brewer.pal(8, "Dark2")
-
-plotColors = c(plotColors, plotColors)
 
 paramsNames <- c(expression(mu),
                  expression(phi),
@@ -67,7 +65,7 @@ if (savePlotToFile) {
   cairo_pdf(fileName, height = 10, width = 8)
 }
 
-layout(matrix(c(1, 1, 1, 2, 3, 4), 2, 3, byrow = TRUE))
+layout(matrix(c(1, 1, 1, 2, 2, 2, 3, 4, 5), 3, 3, byrow = TRUE))
 par(mar = c(4, 5, 1, 1))
 
 # Observations
@@ -79,13 +77,15 @@ plot(
   as.Date(grid),
   obs,
   col = plotColors[1],
-  lwd = 1.25,
-  type = "l",
+  cex = 0.75,
+  type = "p",
+  pch = 19,
   xlab = "time",
   ylab = "observations",
   ylim = c(-15, 15),
   bty = "n",
   xaxt = "n",
+  cex.axis = 1.5,
   cex.lab = 1.5
 )
 atVector1 = seq(as.POSIXct("2015-11-07 01:00:00 CET"),
@@ -95,12 +95,8 @@ atVector2 = seq(as.POSIXct("2015-11-07 01:00:00 CET"),
                 as.POSIXct("2017-11-07 01:00:00 CET"),
                 by = "6 months")
 axis.Date(1, at = atVector1, labels = NA)
-axis.Date(1,
-          at = atVector2,
-          format = "%b %y",
-          cex.axis = 1.5)
+axis.Date(1, at = atVector2, format = "%b %y", cex.axis = 1.5)
 
-# Log-volatility
 statesEstUpperCI <- 1.96 * exp(0.5 * statesEstMean)
 statesEstLowerCI <- -1.96 * exp(0.5 * statesEstMean)
 
@@ -108,9 +104,41 @@ polygon(
   c(as.Date(grid), rev(as.Date(grid))),
   c(statesEstUpperCI, rev(statesEstLowerCI)),
   border = plotColors[2],
-  lwd = 0.5,
+  lwd = 0.25,
   col = rgb(t(col2rgb(plotColors[2])) / 256, alpha = 0.25)
 )
+
+
+#---------------------------------------------------------------------------
+# Log-volatility
+#---------------------------------------------------------------------------
+
+plot(as.Date(grid),
+  statesEstMean,
+  col = plotColors[2],
+  type = "l",
+  xlab = "time",
+  ylab = "log-volatility",
+  bty = "n",
+  ylim = c(-3, 6),
+  cex.axis = 1.5,
+  cex.lab = 1.5,
+  xaxt="n"
+)
+axis.Date(1, at = atVector1, labels = NA)
+axis.Date(1, at = atVector2, format = "%b %y", cex.axis = 1.5)
+
+statesEstUpperCI <- statesEstMean + 1.96 * paramsEstStDev
+statesEstLowerCI <- statesEstMean - 1.96 * paramsEstStDev
+
+polygon(
+  c(as.Date(grid), rev(as.Date(grid))),
+  c(statesEstUpperCI, rev(statesEstLowerCI)),
+  border = plotColors[2],
+  lwd = 0.25,
+  col = rgb(t(col2rgb(plotColors[2])) / 256, alpha = 0.25)
+)
+
 
 #---------------------------------------------------------------------------
 # Parameter posteriors
@@ -135,8 +163,8 @@ for (k in 1:3) {
     main = "",
     xlim = paramsScale[k, ],
     freq = FALSE,
-    cex.lab = 1.5,
-    cex.axis = 1.5
+    cex.axis = 1.5,
+    cex.lab = 1.5
   )
   
   # Add lines for the kernel density estimate of the posterior
@@ -147,7 +175,7 @@ for (k in 1:3) {
   lines(kde, lwd = 2, col = plotColors[k + 2])
   
   # Plot the estimate of the posterior mean
-  abline(v = paramsEstMean[k], lwd = 1, lty = "dotted")
+  abline(v = paramsEstMean[k], lwd = 2, lty = "dotted")
   
   # Add lines for prior
   prior_grid <- seq(paramsScale[k, 1], paramsScale[k, 2], 0.01)
@@ -160,7 +188,7 @@ for (k in 1:3) {
   if (k == 3) {
     prior_values = dgamma(prior_grid, 2.0, 10.0)
   }
-  lines(prior_grid, prior_values, col = "darkgrey", lwd = 1.5)
+  lines(prior_grid, prior_values, col = "darkgrey", lwd = 3)
   
 }
 

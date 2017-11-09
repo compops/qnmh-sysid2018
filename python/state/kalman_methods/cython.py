@@ -31,6 +31,7 @@ class KalmanMethodsCython(BaseStateInference):
         self.results.update({'filt_state_est': np.array(xhatf).reshape((model.no_obs+1, 1))})
         self.results.update({'filt_state_cov': np.array(Pf).reshape((model.no_obs+1, 1))})
         self.results.update({'log_like': float(ll)})
+        self.results.update({'state_trajectory': np.zeros(model.no_obs+1)})
 
     def smoother(self, model):
         """Kalman smoother."""
@@ -71,5 +72,6 @@ class KalmanMethodsCython(BaseStateInference):
         self.results.update({'log_like': float(ll)})
         self.results.update({'log_joint_gradient_estimate': log_joint_gradient_estimate})
         self.results.update({'log_joint_hessian_estimate': log_joint_hessian_estimate})
+        self.results.update({'state_trajectory': np.zeros(model.no_obs+1)})
 
         self._estimate_gradient_and_hessian(model)

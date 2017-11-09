@@ -61,7 +61,8 @@ class KalmanMethods(BaseStateInference):
                              'kalman_gain': kalman_gain,
                              'filt_state_est': filt_state_est,
                              'filt_state_cov': filt_state_cov,
-                             'log_like': log_like
+                             'log_like': log_like,
+                             'state_trajectory': np.zeros(model.no_obs+1)
                              })
 
     def smoother(self, model):

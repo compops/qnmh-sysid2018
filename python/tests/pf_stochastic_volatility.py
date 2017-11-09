@@ -27,7 +27,7 @@ def run(cython_code=False, save_to_file=False):
                                  start_date="2015-11-07",
                                  end_date="2017-11-07",
                                  variable='VWAP',
-                                 api_key="LWnsxBRpquFe9fWcanPF")
+                                 api_key=None)
 
     # Inference model
     sys_model.fix_true_params()

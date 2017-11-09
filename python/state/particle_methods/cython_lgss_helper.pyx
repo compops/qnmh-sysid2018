@@ -17,11 +17,15 @@ DEF PI = 3.1415
 def bpf_lgss(double [:] obs, double mu, double phi, double sigmav, double sigmae):
 
     # Initialise variables
+    cdef int *ancestry = <int *>malloc(NoParticles * NoObs * sizeof(int))
+    cdef int *old_ancestry = <int *>malloc(NoParticles * NoObs * sizeof(int))
+    cdef double *weights = <double *>malloc(NoParticles * NoObs * sizeof(double))
+    cdef double *particles = <double *>malloc(NoParticles * NoObs * sizeof(double))
+    cdef double *weights_at_t = <double *>malloc(NoParticles * sizeof(double))
+
     cdef int[NoParticles] ancestors
-    cdef double[NoParticles] new_part
-    cdef double[NoParticles] old_part
-    cdef double[NoParticles] weights
     cdef double[NoObs] filt_state_est
+    cdef double[NoObs] state_trajectory
     cdef double[NoParticles] unnorm_weights
     cdef double[NoParticles] shifted_weights
     cdef double log_like = 0.0
@@ -32,30 +36,57 @@ def bpf_lgss(double [:] obs, double mu, double phi, double sigmav, double sigmae
     cdef double max_weight = 0.0
     cdef double norm_factor
     cdef double foo_double
+    cdef int idx
 
     # Define counters
     cdef int i
     cdef int j
+    cdef int k
+
+    # Pre-allocate variables
+    for i in range(NoObs):
+        filt_state_est[i] = 0.0
+        state_trajectory[i] = 0.0
+        for j in range(NoParticles):
+            ancestry[i + j * NoObs] = 0
+            old_ancestry[i + j * NoObs] = 0
+            particles[i + j * NoObs] = 0.0
+            weights[i + j * NoObs] = 0.0
 
     # Generate or set initial state
     stDev = sigmav / sqrt(1.0 - (phi * phi))
     for j in range(NoParticles):
-        old_part[j] = mu + stDev * random_gaussian()
-        weights[j] = 1.0 / NoParticles
+        particles[0 + j * NoObs] = mu + stDev * random_gaussian()
+        weights[0 + j * NoObs] = 1.0 / NoParticles
+        ancestry[0 + j * NoObs] = j
+        weights_at_t[j] = 0.0
+        filt_state_est[0] += weights[0 + j * NoObs] * particles[0 + j * NoObs]
 
     for i in range(1, NoObs):
 
         # Resample particles
-        systematic(ancestors, weights)
+        for j in range(NoParticles):
+            weights_at_t[j] = weights[i - 1 + j * NoObs]
+        systematic(ancestors, weights_at_t)
+
+        # Update ancestry
+        for k in range(i):
+            for j in range(NoParticles):
+                old_ancestry[k + j * NoObs] = ancestry[k + j * NoObs]
+
+        for j in range(NoParticles):
+            ancestry[i + j * NoObs] = ancestors[j]
+            for k in range(i):
+                ancestry[k + j * NoObs] = old_ancestry[k + ancestors[j] * NoObs]
 
         # Propagate particles
         for j in range(NoParticles):
-            mean = mu + phi * (old_part[ancestors[j]] - mu)
-            new_part[j] = mean + sigmav * random_gaussian()
+            mean = mu + phi * (particles[i + ancestors[j] * NoObs] - mu)
+            particles[i + j * NoObs] = mean + sigmav * random_gaussian()
 
         # Weight particles
         for j in range(NoParticles):
-            unnorm_weights[j] = norm_logpdf(obs[i], new_part[j], sigmae)
+            unnorm_weights[j] = norm_logpdf(obs[i], particles[i + j * NoObs], sigmae)
 
         max_weight = my_max(unnorm_weights)
         norm_factor = 0.0
@@ -68,19 +99,27 @@ def bpf_lgss(double [:] obs, double mu, double phi, double sigmav, double sigmae
         # Normalise weights and compute state filtering estimate
         filt_state_est[i] = 0.0
         for j in range(NoParticles):
-            weights[j] = shifted_weights[j] / norm_factor
-            if isfinite(weights[j] * new_part[j]) != 0:
-                filt_state_est[i] += weights[j] * new_part[j]
+            weights[i + j * NoObs] = shifted_weights[j] / norm_factor
+            if isfinite(weights[i + j * NoObs] * particles[i + j * NoObs]) != 0:
+                filt_state_est[i] += weights[i + j * NoObs] * particles[i + j * NoObs]
 
         # Estimate log-likelihood
         log_like += max_weight + log(norm_factor) - log(NoParticles)
 
-        # Set new to old
-        for j in range(NoParticles):
-            old_part[j] = new_part[j]
+    # Sample trajectory
+    idx = sampleParticle(weights)
+    for i in range(NoObs):
+        j = ancestry[i + idx * NoObs]
+        state_trajectory[i] = particles[i + j * NoObs]
+
+    free(particles)
+    free(weights)
+    free(weights_at_t)
+    free(ancestry)
+    free(old_ancestry)
 
     # Compile the rest of the output
-    return filt_state_est, log_like
+    return filt_state_est, log_like, state_trajectory
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
@@ -90,6 +129,8 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     cdef int *ancestors = <int *>malloc(NoParticles * sizeof(int))
     cdef double *particle_history = <double *>malloc(FixedLag * NoParticles * sizeof(double))
     cdef double *old_particle_history = <double *>malloc(FixedLag * NoParticles * sizeof(double))
+    cdef int *ancestry = <int *>malloc(NoParticles * NoObs * sizeof(int))
+    cdef int *old_ancestry = <int *>malloc(NoParticles * NoObs * sizeof(int))
 
     cdef double *particles = <double *>malloc(NoObs * NoParticles * sizeof(double))
     cdef double *weights = <double *>malloc(NoObs * NoParticles * sizeof(double))
@@ -97,6 +138,7 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
 
     cdef double[NoObs] filt_state_est
     cdef double[NoObs] smo_state_est
+    cdef double[NoObs] state_trajectory
 
     cdef double *unnorm_weights = <double *>malloc(NoParticles * sizeof(double))
     cdef double *shifted_weights = <double *>malloc(NoParticles * sizeof(double))
@@ -138,10 +180,13 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     for i in range(NoObs):
         filt_state_est[i] = 0.0
         smo_state_est[i] = 0.0
+        state_trajectory[i] = 0.0
         for j in range(NoParticles):
             weights_at_t[j] = 0.0
             particles[i + j * NoObs] = 0.0
             weights[i + j * NoObs] = 0.0
+            ancestry[i + j * NoObs] = 0
+            old_ancestry[i + j * NoObs] = 0
 
     for i in range(4):
         sub_gradient[i] = 0.0
@@ -154,6 +199,7 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
         particles[0 + j * NoObs] = mu + stDev * random_gaussian()
         weights[0 + j * NoObs] = 1.0 / NoParticles
         particle_history[0 + j * FixedLag] = particles[0 + j * NoObs]
+        ancestry[0 + j * NoObs] = j
 
         filt_state_est[0] = 0.0
         for j in range(NoParticles):
@@ -167,10 +213,20 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
             weights_at_t[j] = weights[i - 1 + j * NoObs]
         systematic(ancestors, weights_at_t)
 
-        # Update ancestry
+        # Update buffer for smoother
         for j in range(NoParticles):
             for k in range(FixedLag):
                 old_particle_history[k + j * FixedLag] = particle_history[k + j * FixedLag]
+
+        # Update ancestry
+        for k in range(i):
+            for j in range(NoParticles):
+                old_ancestry[k + j * NoObs] = ancestry[k + j * NoObs]
+
+        for j in range(NoParticles):
+            ancestry[i + j * NoObs] = ancestors[j]
+            for k in range(i):
+                ancestry[k + j * NoObs] = old_ancestry[k + ancestors[j] * NoObs]
 
         # Propagate particles
         for j in range(NoParticles):
@@ -240,6 +296,12 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
                 gradient[2][i - FixedLag + 1] += sub_gradient[2] * weights[i + j * NoObs]
                 gradient[3][i - FixedLag + 1] += sub_gradient[3] * weights[i + j * NoObs]
 
+    # Sample trajectory
+    idx = sampleParticle(weights)
+    for i in range(NoObs):
+        j = ancestry[i + idx * NoObs]
+        state_trajectory[i] = particles[i + j * NoObs]
+
     free(particles)
     free(weights)
     free(weights_at_t)
@@ -248,9 +310,11 @@ def flps_lgss(double [:] obs, double mu, double phi, double sigmav, double sigma
     free(ancestors)
     free(unnorm_weights)
     free(shifted_weights)
+    free(ancestry)
+    free(old_ancestry)
 
     # Compile the rest of the output
-    return filt_state_est, smo_state_est, log_like, gradient
+    return filt_state_est, smo_state_est, log_like, gradient, state_trajectory
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
@@ -327,3 +391,28 @@ cdef int my_min(int x, int y):
         foo = y
     return foo
 
+@cython.cdivision(True)
+@cython.boundscheck(False)
+cdef int sampleParticle(double weights[NoParticles]):
+    cdef int cur_idx = 0
+    cdef int j = 0
+    cdef double rnd_number = random_uniform()
+    cdef double[NoParticles] cum_weights
+    cdef double sum_weights
+
+    # Compute the empirical CDF of the weights
+    cum_weights[0] = weights[0]
+    sum_weights = weights[0]
+    for j in range(1, NoParticles):
+        cum_weights[j] = cum_weights[j-1] + weights[j]
+        sum_weights += weights[j]
+
+    for j in range(1, NoParticles):
+        cum_weights[j] /= sum_weights
+
+    for j in range(NoParticles):
+        if cum_weights[cur_idx] < rnd_number:
+            cur_idx += 1
+        else:
+            break
+    return cur_idx

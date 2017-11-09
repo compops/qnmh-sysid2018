@@ -323,7 +323,7 @@ class MetropolisHastings(BaseParameterInference):
                 state.filter(model)
 
             self.log_like[0] = float(state.results['log_like'])
-            init_state = state.results['filt_state_est']
+            init_state = state.results['state_trajectory']
             self.states[0, :] = init_state.reshape(model.no_obs+1)
 
             self.gradient[0, :] = get_gradient(self, state)
@@ -410,7 +410,7 @@ class MetropolisHastings(BaseParameterInference):
                 state.filter(model)
 
             prop_log_like = float(state.results['log_like'])
-            prop_states = state.results['filt_state_est'].reshape(model.no_obs+1)
+            prop_states = state.results['state_trajectory'].reshape(model.no_obs+1)
 
             prop_grad = get_gradient(self, state)
             prop_hess = get_hessian(self, state, prop_grad)

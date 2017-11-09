@@ -49,7 +49,7 @@ def main(cython_code=True, seed_offset=0):
            sim_name=sim_name,
            seed_offset=seed_offset)
 
-    mh_settings.update({'step_size': 1.38 / np.sqrt(3**(1/3))})
+    mh_settings.update({'step_size': 0.5 * 1.38 / np.sqrt(3**(1/3))})
     sim_name = 'example1_mh1pre_' + str(seed_offset)
     mh.run(mh_settings=mh_settings,
            cython_code=True,
@@ -61,6 +61,7 @@ def main(cython_code=True, seed_offset=0):
            seed_offset=seed_offset)
 
     mh_settings.update({'step_size': 0.5})
+    mh_settings.update({'base_hessian': 0.01**2 * np.eye(3)})
     sim_name = 'example1_mh2sw_' + str(seed_offset)
     mh.run(mh_settings=mh_settings,
            cython_code=True,

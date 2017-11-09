@@ -39,34 +39,28 @@ for (i in 1:(noAlgorithms)) {
   }    
 }
 
-medianOutput <- matrix(0, nrow = noAlgorithms, ncol = 8)
+medianOutput <- matrix(0, nrow = noAlgorithms, ncol = 6)
 for (i in 1:noAlgorithms) {
   outputMethod <- matrix(as.numeric(output[-1, , i]), nrow = noSimulations, ncol = 7, byrow = TRUE)
   medianOutput[i, 1] <- median(outputMethod[, 1])
   medianOutput[i, 2] <- median(outputMethod[, 2])
-  min_iact <- rep(0, noSimulations)
   max_iact <- rep(0, noSimulations)
   for (j in 1:noSimulations) {
-    min_iact[j] <- min(outputMethod[j, 3:5])
     max_iact[j] <- max(outputMethod[j, 3:5])
   }
-  medianOutput[i, 3] <- median(min_iact)
-  medianOutput[i, 4] <- IQR((min_iact))
-  medianOutput[i, 5] <- median(max_iact)
-  medianOutput[i, 6] <- IQR(max_iact)
-  medianOutput[i, 7] <- median(outputMethod[, 6])
-  medianOutput[i, 8] <- median(outputMethod[, 7])
+  medianOutput[i, 3] <- median(max_iact)
+  medianOutput[i, 4] <- IQR(max_iact)
+  medianOutput[i, 5] <- median(outputMethod[, 6])
+  medianOutput[i, 6] <- median(outputMethod[, 7])
 }
 
 medianOutput[, 1] <- round(medianOutput[, 1], 2)
 medianOutput[, 2] <- round(medianOutput[, 2], 2)
 medianOutput[, 3] <- round(medianOutput[, 3], 0)
 medianOutput[, 4] <- round(medianOutput[, 4], 0)
-medianOutput[, 5] <- round(medianOutput[, 5], 0)
-medianOutput[, 6] <- round(medianOutput[, 6], 0)
-medianOutput[, 7] <- round(medianOutput[, 7]*1000, 2)
-medianOutput[, 8] <- round(medianOutput[, 8]*1000, 2)
+medianOutput[, 5] <- round(medianOutput[, 5]*1000, 2)
+medianOutput[, 6] <- round(medianOutput[, 6]*1000, 2)
 
 row.names(medianOutput) <- c("pMH0", "pMH1", "PMH2", "dBFGS", "iBFGS-flip", "iBFGS-reg", "iBFGS-hyb", "eBFGS-hyb")
-xtable(medianOutput, digits = c(0, 2, 2, 0, 0, 0, 0, 2, 2))
+xtable(medianOutput, digits = c(0, 2, 2, 0, 0, 2, 2))
 
