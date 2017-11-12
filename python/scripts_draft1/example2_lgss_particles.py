@@ -65,7 +65,7 @@ def main(seed_offset=0):
            seed_offset=seed_offset)
 
     mh_settings.update({'step_size': 0.5})
-    mh_settings.update({'base_hessian': 0.01**2 * np.exp(3)})
+    mh_settings.update({'base_hessian': 0.01**2 * np.eye(3)})
     mh_settings.update({'qn_strategy': 'bfgs'})
     sim_name = 'example2_mh_bfgs_' + str(seed_offset)
     sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',

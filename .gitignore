@@ -1,10 +1,14 @@
 results/
 results-tests/
 *.pickle
-*.pdf
 *.json
 *.txt
 *.html
+*.aux
+*.bbl
+*.blg
+*.log
+*.synctex.gz
 
 .vscode/
 .R~
