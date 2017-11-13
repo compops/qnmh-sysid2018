@@ -7,7 +7,7 @@ source("helper_table.R")
 
 algorithms <- c("mh0pre", "mh1pre", "mh2sw", "mh_bfgs")
 bfgs_variants <- c("ignore_flip", "ignore_reg", "ignore_replace", "enforce_replace")
-noSimulations <- 10
+noSimulations <- 25
 noAlgorithms <- length(algorithms) + length(bfgs_variants)
 
 output <- array(0, dim = c(8, noSimulations, noAlgorithms))

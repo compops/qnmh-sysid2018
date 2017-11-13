@@ -1,9 +1,9 @@
-# Quasi-Newton methods for second-order Metropolis-Hastings
+# Constructing Metropolis-Hastings proposals using damped BFGS updates
 This code was downloaded from https://github.com/compops/qnmh-sysid2018 and contains the code and data used to produce the results in the paper:
 
-J. Dahlin, A. Wills and B. Ninness, ***. Pre-print, arXiv:1712:****, 2017.
+J. Dahlin, A. Wills and B. Ninness, Constructing Metropolis-Hastings proposals using damped BFGS updates. Pre-print, arXiv:1712:****, 2017.
 
-The tutorial is available as a preprint from http://arxiv.org/pdf/1712****.
+The paper is available as a preprint from http://arxiv.org/pdf/1712****.
 
 ## Python code
 This code is used to set-up and run all the experiments in the paper. The code can possibly also be modified for other models. See the `README.md` file for more information.
@@ -30,7 +30,7 @@ which will extract the results and put them into the current folder.
 This code is used to generate diagnostic plot as well as plots and table for the paper. See the `README.md` file for more information.
 
 ## Binaries and results from simulations
-The data generated from each run of an algorithm is about 100 megabytes. Therefore the generated data cannot be easily distributed via GitHub. Please contact the authors if you would like to receive a copy of the out from the simulations. Otherwise, you should be able to reproduce all runs yourself within a few hours by running the Docker container.
+The data generated from each run of the algorithms is about 100 megabytes. Therefore the generated data cannot be easily distributed via GitHub. Please contact the authors if you would like to receive a copy of the out from the simulations. Otherwise, you should be able to reproduce all runs yourself within a few hours by running the Docker container.
 
 ## License
 This source code is distributed under the MIT license. See the file `LICENSE` for more information.

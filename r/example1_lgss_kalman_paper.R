@@ -11,13 +11,13 @@ algorithms <-
     "example1_mh_bfgs_0")
 shortAlgorithmName <- c("pMH0", "pMH1", "qMH-dBFGS")
 noItersToPlot <- 200
-savePlotToFile <- TRUE
+savePlotToFile <- FALSE
 parameterToPlot <- 2
 paramsScale <- c(0.4, 0.7)
 
 if (savePlotToFile) {
   fileName <-
-    "~/projects/qnmh-sysid2018/paper/qnmh-sysid2018-draft1/figures/example1_lgss_kalman_paper.pdf"
+    "~/src/qnmh-sysid2018/tex/draft1/figures/example1_lgss_kalman_paper.pdf"
   cairo_pdf(fileName, height = 10, width = 8)
 }
 
@@ -50,6 +50,7 @@ for (i in 1:length(algorithms)) {
   
   paramsTrace <- result$params
   paramsEstMean   <- colMeans(paramsTrace)
+  noIters <- settings$no_iters - settings$no_burnin_iters
   
 #  if (i == 3) {
 #    paramsTrace <- result$params[seq(1, length(result$params[,1]), 20), ]
@@ -63,7 +64,7 @@ for (i in 1:length(algorithms)) {
     breaks = floor(sqrt(noIters)),
     col = rgb(t(col2rgb(plotColors[i + 5])) / 256, alpha = 0.25),
     border = NA,
-    xlab = paramsNames[parameterToPlot],
+    xlab = expression(phi),
     ylab = "posterior estimate",
     main = "",
     ylim = c(0, 12),
@@ -97,7 +98,7 @@ for (i in 1:length(algorithms)) {
     col = plotColors[i + 5],
     type = "l",
     xlab = "iteration",
-    ylab = paramsNames[parameterToPlot],
+    ylab = expression(phi),
     ylim = paramsScale,
     bty = "n",
     cex.lab = 1.5,
@@ -120,7 +121,7 @@ for (i in 1:length(algorithms)) {
     col = plotColors[i + 5],
     type = "l",
     xlab = "iteration",
-    ylab = paramsNamesACF[parameterToPlot],
+    ylab =  expression("ACF of " * phi),
     lwd = 2,
     ylim = c(0, 1),
     bty = "n",
