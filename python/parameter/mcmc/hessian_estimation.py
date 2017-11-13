@@ -175,7 +175,7 @@ def correct_hessian(estimate, mcmc):
             evd = np.linalg.eig(estimate)
             ev_matrix = np.diag(np.abs(evd[0]))
             estimate = np.matmul(evd[1], ev_matrix)
-            estimate = np.matmul(estimate, evd[1])
+            estimate = np.matmul(estimate, np.linalg.inv(evd[1]))
             return np.real(estimate)
         else:
             raise ValueError("Unknown Hessian correction strategy...")
