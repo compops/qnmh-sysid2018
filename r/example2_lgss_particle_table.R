@@ -15,7 +15,7 @@ output <- array(0, dim = c(8, noSimulations, noAlgorithms))
 for (i in 1:(noAlgorithms)) {
   for (j in 1:noSimulations) {
     
-    if (i < 3) {
+    if (i < 4) {
       algorithm <- paste("example2", paste(algorithms[i], j-1, sep="_"), sep="_")
     } else {
       algorithm <- paste(paste("example2", paste(algorithms[3], j-1, sep="_"), sep="_"), bfgs_variants[i-3], sep="_")

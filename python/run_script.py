@@ -6,10 +6,10 @@ import scripts_draft1.example3_stochastic_volatility_particle as example3
 
 if len(sys.argv) > 1:
     if int(sys.argv[1]) == 1:
-        for i in range(10):
+        for i in range(25):
             example1.main(seed_offset=i)
     elif int(sys.argv[1]) == 2:
-        for i in range(10):
+        for i in range(25):
             example2.main(seed_offset=i)
     elif int(sys.argv[1]) == 3:
         example3.main(seed_offset=0)
