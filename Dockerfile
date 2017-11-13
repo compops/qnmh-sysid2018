@@ -2,17 +2,15 @@
 FROM python:3.6
 
 # Set the working directory to /app
-WORKDIR /app
+WORKDIR /app/python
 
 # Copy the current directory contents into the container at /app
-ADD ./data /data
-ADD ./python /app
-ADD ./requirements.txt /app
+ADD ./data /app/data
+ADD ./python /app/python
+ADD ./requirements.txt /app/python
 
 # Install any needed packages specified in requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install -r /app/python/requirements.txt
 
-# Run Python files when the container launches
-#RUN mkdir results
-CMD python setup.py
-CMD python run_script.py
+# Run script on launch
+CMD bash ./run_script.sh
