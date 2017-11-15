@@ -9,6 +9,7 @@ If you opt to install python yourself some additional libraries are required. Th
 ``` bash
 pip install quandl pymongo numpy scipy pandas matplotlib palettable cython
 ```
+The exact versions used when running the experiments in the paper are available in the `requirements.txt` file in the root folder of the repository.
 
 ### Cython
 Some of the code is written in Cython and requires compilation before it can be run. Please execute the following from the root directory
@@ -16,7 +17,6 @@ Some of the code is written in Cython and requires compilation before it can be 
 python setup.py build_ext --inplace
 ```
 to compile this code. The number of particles and observations are hard-coded into the C-code due to the use of static arrays for speed. To change this, open the file corresponding to the model of interest and change the constants `NoParticles` and `NoObs` in the beginning of the file. Note that `NoObs` is T+1 (as we include the unknown initial state).
-
 
 ### Request Quandl API key
 The run of example 3 requires that data is collected from Quandl for each simulation as due to Copyright reasons this data cannot be distributed along the source code. Quandl limits the number of data requests without a API key to 50 per day. Therefore it is advisable to register at Quandl and to enter you own API key in the file `python/scripts_draft1/helper_stochastic_volatility.py`.
@@ -73,16 +73,12 @@ An overview of the file structure of the code base is found below.
 * **state/** contains the code for the Kalman filter/smoother, bootstrap particle filter and fixed-lag particle smoother. This code is quite general and should work for most scalar state space models. Cython versions are also available for the linear Gaussian and stochastic volatility models.
 * **tests/** contains test scripts to validate the implementation. These are largely undocumented.
 
-Results are available as a zip-file in the latest release in the Git repository.
-
 ## Modifying the code for other models
 This code is fairly general and can be used for inference in any state space model expressed by densities and with a scalar state. The main alteration required for using multivariate states is to rewrite the particle vector, propagation step and weighting step in the particle filter and smoother. As well as the standard generalisation of the Kalman filter and smoother.
 
 The models are defined by files in models/. To implement a new model you can alter the existing models and re-define the functions `generate_initial_state`, `generate_state`, `evaluate_state`,  `generate_obs`, `evaluate_obs` and `check_parameters`. The names of these methods and their arguments should be self-explanatory. Furthermore, the gradients of the logarithm of the joint distribution of states and observation need to be computed by hand and entered into the code. The method `log_joint_gradient` is responsible for this computation.
 
 In the paper, all model parameters are unrestricted and can assume any real value in the MH algorithm. This is enabled by reparametersing the model, which is always recommended for MH algorithms. This results in that the reparameterisation must be encoded in the methods `transform_params_to_free` and `transform_params_from_free`, where free parameters are the unrestricted versions. This also introduces a Jacobian factor into the acceptance probability encoded by `log_jacobian` as well as extra terms in the gradients and Hessians of both the log joint distribution of states and observations as well as the log priors. Please take good care when performing this calculations. For an example, see the supplementary material to the, which contains the required computations for the linear Gaussian state space model.
-
-### Cython
 
 ### Calibration of user settings
 
