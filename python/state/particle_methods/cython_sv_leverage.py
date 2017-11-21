@@ -1,9 +1,9 @@
 """Particle methods."""
 import numpy as np
-from state.particle_methods.cython_sv_helper import bpf_sv, flps_sv
+from state.particle_methods.cython_sv_leverage_helper import bpf_sv, flps_sv
 from state.base_state_inference import BaseStateInference
 
-class ParticleMethodsCythonSV(BaseStateInference):
+class ParticleMethodsCythonSVLeverage(BaseStateInference):
     """Particle methods."""
 
     def __init__(self, new_settings=None):
@@ -20,25 +20,26 @@ class ParticleMethodsCythonSV(BaseStateInference):
             self.settings.update(new_settings)
 
     def filter(self, model):
-        """Bootstrap particle filter for SV model."""
+        """Bootstrap particle filter for SV model with leverage."""
         self.name = "Bootstrap particle filter (Cython)"
         obs = np.array(model.obs.flatten())
         params = model.get_all_params()
         xhatf, ll, xtraj = bpf_sv(obs, mu=params[0],
-                                  phi=params[1], sigmav=params[2])
+                                  phi=params[1], sigmav=params[2], rho=params[3])
         self.results.update({'filt_state_est': np.array(xhatf).reshape((model.no_obs+1, 1))})
         self.results.update({'state_trajectory': np.array(xtraj).reshape((model.no_obs+1, 1))})
         self.results.update({'log_like': ll})
 
     def smoother(self, model):
-        """Fixed-lag particle smoother for SV model."""
+        """Fixed-lag particle smoother for SV model with leverage."""
         self.name = "Fixed-lag particle smoother (Cython)"
         obs = np.array(model.obs.flatten())
         params = model.get_all_params()
         xhatf, xhats, ll, gradient, xtraj = flps_sv(obs,
                                                     mu=params[0],
                                                     phi=params[1],
-                                                    sigmav=params[2])
+                                                    sigmav=params[2],
+                                                    rho=params[3])
 
         # Compute estimate of gradient and Hessian
         gradient = np.array(gradient).reshape((model.no_params, model.no_obs+1))

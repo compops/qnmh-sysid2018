@@ -5,14 +5,14 @@ This code was developed using Anaconda 3 and Python 3.6.3. To satisfy these requ
 ``` bash
 conda install quandl pymongo palettable cython
 ```
-If you opt to install python yourself some additional libraries are required. These can be installed using:
+If you opt to install python yourself some additional libraries are required. These can be installed by executing the following in the root directory:
 ``` bash
-pip install quandl pymongo numpy scipy pandas matplotlib palettable cython
+pip install -r requirements.txt
 ```
-The exact versions used when running the experiments in the paper are available in the `requirements.txt` file in the root folder of the repository.
+see the file for the exact versions used for running the experiments in the paper.
 
 ### Cython
-Some of the code is written in Cython and requires compilation before it can be run. Please execute the following from the root directory
+Some of the code is written in Cython and requires compilation before it can be run. Please execute the following from the `python` directory
 ``` bash
 python setup.py build_ext --inplace
 ```
@@ -22,45 +22,91 @@ to compile this code. The number of particles and observations are hard-coded in
 The run of example 3 requires that data is collected from Quandl for each simulation as due to Copyright reasons this data cannot be distributed along the source code. Quandl limits the number of data requests without a API key to 50 per day. Therefore it is advisable to register at Quandl and to enter you own API key in the file `python/scripts_draft1/helper_stochastic_volatility.py`.
 
 ## Reproducing the results in the paper
+The results in the paper can be reproduced by running the scripts found in the folder `scripts_draft1/`. Here, we discuss each of the three examples in details and provide some additional supplementary details, which are not covered in the paper. The results from each script is saved in the folder `results/` under subfolders corresponding to the three different examples.
 
-### Example 1: Linear Gaussian state space model using Kalman methods
-**example1-lgss-kalman.py**
-``` python
-mh_settings = {'no_iters': 5000,
-               'no_burnin_iters': 1000,
-               'step_size': 0.8,
-               'base_hessian': np.eye(3) * 0.05**2,
-               'initial_params': (0.0, 0.1, 0.2),
-               'hessian_correction_verbose': True,
-               'qn_initial_hessian': 'scaled_gradient',
-               'qn_initial_hessian_scaling': 0.01,
-               'verbose': False,
-               'trust_region_size': 0.4,
-               'qn_only_accepted_info': True,
-               'qn_memory_length': 20
-               }
+Examples 1 and 2 are repeated using different random seeds 25 times in a Monte Carlo simulation. The simplest way to execute these is to call the script `run_script.sh`, which will run all the experiments (note that this will take at least a day). Another way to execute a single experiment is to call
+
+``` bash
+python run_script.py experiment_number
 ```
 
+where `experiment_number` is 1, 2 or 3. Note that this will still mean that 25 experiments are run for examples 1 and 2. To run only one repetition for a single experiment, change the code in `run_script.py` by removing the for-loop.
+
+
+### Example 1: Linear Gaussian states-space model using Kalman methods
+The script `example1-lgss-kalman.py` reproduces the first example in Section 5.1. The model is a linear Gaussian state-space model given by
+
 ``` python
-mh_settings.update({'qn_strategy': 'bfgs'})
-mh_settings.update({'qn_strategy': 'sr1', 'hessian_correction': 'flip'})
-mh_settings.update({'qn_strategy': 'sr1', 'hessian_correction': 'replace'})
+x_{t+1} | x_t ~ N( x_{t+1}; mu + phi * (x_t - mu), sigma_v^2)
+y_t     | x_t ~ N( y_t; x_t, 0.5^2)
 ```
 
-### Example 2: Linear Gaussian state space model using particle methods
-**example2-lgss-particle.py**
+where the unknown parameters are `(mu, phi, sigma_v)`. The parameters are estimated using a synthetic data set generated from the model. The value of the log-posterior and its gradients are computed using Kalman filtering and smoothing. The script makes use of the following settings for the Kalman methods:
+
 ``` python
-pf_settings = {'resampling_method': 'systematic',
-               'no_particles': 1000,
-               'estimate_gradient': True,
-               'estimate_hessian_segalweinstein': True,
-               'fixed_lag': 10,
-               'generate_initial_state': True
+kf_settings = {'initial_state': 0.0,
+               'initial_cov': 1e-5,
+               'estimate_gradient': True
               }
 ```
+which means that the initial state is zero with the covariance 10^-5 and the gradients of the log-posterior are computed.
+
+The Metropolis-Hastings algorithm makes use of the following settings:
+
+``` python
+mh_settings = {'no_iters': 10000,
+               'no_burnin_iters': 3000,
+               'step_size': 0.5,
+               'base_hessian': hessian_estimate,
+               'initial_params': (0.2, 0.5, 1.0),
+               'verbose': False,
+               'verbose_wait_enter': False,
+               'trust_region_size': None,
+               'hessian_estimate': None,
+               'hessian_correction': 'replace',
+               'hessian_correction_verbose': False,
+               'no_iters_between_progress_reports': 1000,
+               'qn_memory_length': 20,
+               'qn_initial_hessian': 'scaled_gradient',
+               'qn_strategy': None,
+               'qn_bfgs_curvature_cond': 'damped',
+               'qn_sr1_safe_parameterisation': False,
+               'qn_sr1_skip_limit': 1e-8,
+               'qn_initial_hessian_scaling': 0.01,
+               'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
+               'qn_only_accepted_info': True,
+               'qn_accept_all_initial': True
+               }
+```
+where the most important settings are `no_iters` (no. iterations), `no_burnin_iters` (no. burn-in iterations), `step_size` (epsilon in the paper), `base_hessian` (pre-conditioning matrix in paper) and `initial_params` (the point in which the Markov chain is initialised). For the quasi-Newton proposal, we have `qn_memory_length` (memory length M in paper), `qn_initial_hessian` (how the Hessian estimate is initialised) and `qn_initial_hessian_scaling` (the size of the initial step),
+
+When running the various experiments, step lengths and similar are adjusted. For the quasi-Newton algorithms `hessian_correction` is used to determined how the negative definite Hessian estimates are corrected, see the paper for details.
+
+### Example 2: Linear Gaussian state-space model using particle methods
+The script `example2-lgss-particle.py` reproduce the second example in Section 5.2. The setup is the same as in example 1 but particle filtering and smoothing are used to estimate the log-posterior and its gradients. The settings for the particle methods are:
+
+``` python
+pf_settings = {'no_particles': 2000,
+                'resampling_method': 'systematic',
+                'fixed_lag': 10,
+                'initial_state': 0.0,
+                'generate_initial_state': True,
+                'estimate_gradient': True,
+                'estimate_hessian': True,
+                }
+```
+
+which should be self-explanatory. Remember that the Cython code is used in the script and these settings are overridden by settings written directly as constants in the `.pyx`-file in the directory `state/particle_methods`.
 
 ### Example 3: Non-linear state space model using particle methods
+The script `example3-stochastic_volatility_leverage_particle.py` reproduces the third example in Section 5.3. The model is a stochastic volatility model with leverage given by
 
+``` python
+x_{t+1} | x_t ~ N( x_{t+1}; mu + phi * (x_t - mu) + rho * sigma_v * exp(-xt/2) * y_t, sigma_v^2 (1 - rho^2))
+y_t     | x_t ~ N( y_t; 0, exp(x_t))
+```
+
+where the unknown parameters are `(mu, phi, sigma_v, rho)`. The data is obtained from Quandl and contains the log-return from Bitcoins during a two year period. Settings are similar as for example 2.
 
 ## File structure
 An overview of the file structure of the code base is found below.
