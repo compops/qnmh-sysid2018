@@ -1,6 +1,5 @@
 setwd("~/src/qnmh-sysid2018/r")
 library("jsonlite")
-
 library("RColorBrewer")
 plotColors = brewer.pal(8, "Dark2")
 plotColors = c(plotColors, plotColors)
@@ -11,7 +10,7 @@ algorithms <-
 offset <- c(0)
 noItersToPlot <- 350
 savePlotToFile <- TRUE
-paramsScale <- c(-0.5, 2.5, 0.9, 1.0, 0.2, 0.7)
+paramsScale <- c(0.5, 2.5, 0.85, 1.0, 0.3, 0.7, -0.3, 0.3)
 
 algorithm <- "example3_qmh_bfgs"
 
@@ -38,10 +37,12 @@ simplifyVector = TRUE)
 
 paramsNames <- c(expression(mu),
                  expression(phi),
-                 expression(sigma[v]))
+                 expression(sigma[v]),
+                 expression(rho))
 paramsNamesACF <- c(expression("ACF of " * mu),
                     expression("ACF of " * phi),
-                    expression("ACF of " * sigma[v]))
+                    expression("ACF of " * sigma[v]),
+                    expression("ACF of " * rho))
 
 obs <- data$observations
 noIters <- settings$no_iters - settings$no_burnin_iters
@@ -60,12 +61,11 @@ statesEstStDev      <- apply(statesTrace, 2, sd)
 # Plot the parameter posterior estimate, solid black line indicate posterior mean
 # Plot the trace of the Markov chain after burn-in, solid black line indicate posterior mean
 if (savePlotToFile) {
-  fileName <-
-    "~/projects/qnmh-sysid2018/paper/qnmh-sysid2018-draft1/figures/example3_stochastic_volatility_paper.pdf"
+  fileName <- "../results/example3_stochastic_volatility_paper.pdf"
   cairo_pdf(fileName, height = 10, width = 8)
 }
 
-layout(matrix(c(1, 1, 1, 2, 2, 2, 3, 4, 5), 3, 3, byrow = TRUE))
+layout(matrix(c(1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 5, 6), 3, 4, byrow = TRUE))
 par(mar = c(4, 5, 1, 1))
 
 # Observations
@@ -103,8 +103,7 @@ statesEstLowerCI <- -1.96 * exp(0.5 * statesEstMean)
 polygon(
   c(as.Date(grid), rev(as.Date(grid))),
   c(statesEstUpperCI, rev(statesEstLowerCI)),
-  border = plotColors[2],
-  lwd = 0.25,
+  border = NA,
   col = rgb(t(col2rgb(plotColors[2])) / 256, alpha = 0.25)
 )
 
@@ -120,7 +119,7 @@ plot(as.Date(grid),
   xlab = "time",
   ylab = "log-volatility",
   bty = "n",
-  ylim = c(-3, 6),
+  ylim = c(-4, 6),
   cex.axis = 1.5,
   cex.lab = 1.5,
   xaxt="n"
@@ -128,14 +127,13 @@ plot(as.Date(grid),
 axis.Date(1, at = atVector1, labels = NA)
 axis.Date(1, at = atVector2, format = "%b %y", cex.axis = 1.5)
 
-statesEstUpperCI <- statesEstMean + 1.96 * paramsEstStDev
-statesEstLowerCI <- statesEstMean - 1.96 * paramsEstStDev
+statesEstUpperCI <- statesEstMean + 1.96 * statesEstStDev
+statesEstLowerCI <- statesEstMean - 1.96 * statesEstStDev
 
 polygon(
   c(as.Date(grid), rev(as.Date(grid))),
   c(statesEstUpperCI, rev(statesEstLowerCI)),
-  border = plotColors[2],
-  lwd = 0.25,
+  border = NA,
   col = rgb(t(col2rgb(plotColors[2])) / 256, alpha = 0.25)
 )
 
@@ -146,12 +144,12 @@ polygon(
 
 grid <- seq(1, noItersToPlot, 1)
 paramsScale <- matrix(paramsScale,
-                      nrow = 3,
+                      nrow = 4,
                       ncol = 2,
                       byrow = TRUE)
 iact <- c()
 
-for (k in 1:3) {
+for (k in 1:4) {
   # Histogram of the posterior
   hist(
     paramsTrace[, k],
@@ -188,6 +186,9 @@ for (k in 1:3) {
   if (k == 3) {
     prior_values = dgamma(prior_grid, 2.0, 10.0)
   }
+  if (k == 4) {
+    prior_values = dnorm(prior_grid, 0.0, 1.0)
+  }  
   lines(prior_grid, prior_values, col = "darkgrey", lwd = 3)
   
 }

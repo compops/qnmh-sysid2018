@@ -1,38 +1,36 @@
 setwd("~/src/qnmh-sysid2018/r")
 library("jsonlite")
-source("helper_plotting.R")
+source("diagnostics/helper_plotting.R")
 
-algorithms <- c("example2_mh2_",
-                "example2_qmh_bfgs_",
-                "example2_qmh_sr1_hyb_")
-offset <- c(0)
-noItersToPlot <- 1000
+algorithms <- list.dirs("../results/example2/", full.names = FALSE)[-1]
+algorithms <- algorithms[grepl(indexToPlot, algorithms)]
+
+noItersToPlot <- 200
 savePlotToFile <- TRUE
-paramsScale <- c(0.1, 0.6, 0.35, 0.55, 0.9, 1.05)
+paramsScale <- c(0.0, 0.6, 0.3, 0.8, 0.8, 1.2)
 
 for (i in 1:length(algorithms)) {
-  for (j in 1:length(offset)) {
-    algorithm <- paste(algorithms[i], offset[j], sep="")
+  algorithm <- algorithms[i]
 
-    data <- read_json(paste("../results/",
-                      paste(algorithm, "/data.json", sep=""),
+
+  data <- read_json(paste("../results/example2/",
+                    paste(algorithm, "/data.json.gz", sep=""),
+                    sep=""),
+                    simplifyVector = TRUE)
+  result <- read_json(paste("../results/example2/",
+                      paste(algorithm, "/mcmc_output.json.gz", sep=""),
                       sep=""),
                       simplifyVector = TRUE)
-    result <- read_json(paste("../results/",
-                        paste(algorithm, "/mcmc_output.json", sep=""),
+  settings <- read_json(paste("../results/example2/",
+                        paste(algorithm, "/settings.json.gz", sep=""),
                         sep=""),
                         simplifyVector = TRUE)
-    settings <- read_json(paste("../results/",
-                          paste(algorithm, "/settings.json", sep=""),
-                          sep=""),
-                          simplifyVector = TRUE)
-
-    iact <- helper_plotting(data=data,
-                            result=result,
-                            settings=settings,
-                            algorithm=algorithm,
-                            noItersToPlot=noItersToPlot,
-                            savePlotToFile=savePlotToFile,
-                            paramsScale=paramsScale)
-  }
+  iact <- helper_plotting(data=data,
+                          result=result,
+                          settings=settings,
+                          algorithm=algorithm,
+                          noItersToPlot=noItersToPlot,
+                          savePlotToFile=savePlotToFile,
+                          paramsScale=paramsScale,
+                          folderToSaveTo="../results/example2-diagplots/")
 }
