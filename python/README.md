@@ -22,7 +22,7 @@ to compile this code. The number of particles and observations are hard-coded in
 The run of example 3 requires that data is collected from Quandl for each simulation as due to Copyright reasons this data cannot be distributed along the source code. Quandl limits the number of data requests without a API key to 50 per day. Therefore it is advisable to register at Quandl and to enter you own API key in the file `python/scripts_draft1/helper_stochastic_volatility.py`.
 
 ## Reproducing the results in the paper
-The results in the paper can be reproduced by running the scripts found in the folder `scripts_draft1/`. Here, we discuss each of the three examples in details and provide some additional supplementary details, which are not covered in the paper. The results from each script is saved in the folder `results/` under subfolders corresponding to the three different examples.
+The results in the paper can be reproduced by running the scripts found in the folder `scripts_draft1/`. Here, we discuss each of the three examples in details and provide some additional supplementary details, which are not covered in the paper. The results from each script is saved in the folder `results/` under sub-folders corresponding to the three different examples.
 
 Examples 1 and 2 are repeated using different random seeds 25 times in a Monte Carlo simulation. The simplest way to execute these is to call the script `run_script.sh`, which will run all the experiments (note that this will take at least a day). Another way to execute a single experiment is to call
 
@@ -34,7 +34,7 @@ where `experiment_number` is 1, 2 or 3. Note that this will still mean that 25 e
 
 
 ### Example 1: Linear Gaussian states-space model using Kalman methods
-The script `example1-lgss-kalman.py` reproduces the first example in Section 5.1. The model is a linear Gaussian state-space model given by
+The script `example1_lgss_kalman.py` reproduces the first example in Section 5.1. The model is a linear Gaussian state-space model given by
 
 ``` python
 x_{t+1} | x_t ~ N( x_{t+1}; mu + phi * (x_t - mu), sigma_v^2)
@@ -83,7 +83,7 @@ where the most important settings are `no_iters` (no. iterations), `no_burnin_it
 When running the various experiments, step lengths and similar are adjusted. For the quasi-Newton algorithms `hessian_correction` is used to determined how the negative definite Hessian estimates are corrected, see the paper for details.
 
 ### Example 2: Linear Gaussian state-space model using particle methods
-The script `example2-lgss-particle.py` reproduce the second example in Section 5.2. The setup is the same as in example 1 but particle filtering and smoothing are used to estimate the log-posterior and its gradients. The settings for the particle methods are:
+The script `example2_lgss_particle.py` reproduce the second example in Section 5.2. The setup is the same as in example 1 but particle filtering and smoothing are used to estimate the log-posterior and its gradients. The settings for the particle methods are:
 
 ``` python
 pf_settings = {'no_particles': 2000,
@@ -99,7 +99,7 @@ pf_settings = {'no_particles': 2000,
 which should be self-explanatory. Remember that the Cython code is used in the script and these settings are overridden by settings written directly as constants in the `.pyx`-file in the directory `state/particle_methods`.
 
 ### Example 3: Non-linear state space model using particle methods
-The script `example3-stochastic_volatility_leverage_particle.py` reproduces the third example in Section 5.3. The model is a stochastic volatility model with leverage given by
+The script `example3_stochastic_volatility_particle.py` reproduces the third example in Section 5.3. The model is a stochastic volatility model with leverage given by
 
 ``` python
 x_{t+1} | x_t ~ N( x_{t+1}; mu + phi * (x_t - mu) + rho * sigma_v * exp(-xt/2) * y_t, sigma_v^2 (1 - rho^2))
