@@ -103,8 +103,7 @@ statesEstLowerCI <- -1.96 * exp(0.5 * statesEstMean)
 polygon(
   c(as.Date(grid), rev(as.Date(grid))),
   c(statesEstUpperCI, rev(statesEstLowerCI)),
-  border = plotColors[2],
-  lwd = 0.25,
+  border = NA,
   col = rgb(t(col2rgb(plotColors[2])) / 256, alpha = 0.25)
 )
 
@@ -134,8 +133,7 @@ statesEstLowerCI <- statesEstMean - 1.96 * statesEstStDev
 polygon(
   c(as.Date(grid), rev(as.Date(grid))),
   c(statesEstUpperCI, rev(statesEstLowerCI)),
-  border = plotColors[2],
-  lwd = 0.0,
+  border = NA,
   col = rgb(t(col2rgb(plotColors[2])) / 256, alpha = 0.25)
 )
 
