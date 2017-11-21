@@ -104,7 +104,7 @@ class StochasticVolatilityModelLeverage(BaseModel):
         mean = self.params['mu']
         mean += self.params['phi'] * (cur_state - self.params['mu'])
         mean += self.params['sigma_v'] * self.params['rho'] * \
-                np.exp(-0.5 * cur_state) * self.obs[time_step]
+                np.exp(-0.5 * cur_state) * self.obs[time_step - 1]
         stdev = np.sqrt(1.0 - self.params['rho']**2) * self.params['sigma_v']
         return norm.logpdf(next_state, mean, stdev)
 

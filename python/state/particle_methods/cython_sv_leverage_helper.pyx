@@ -8,7 +8,7 @@ from libc.float cimport FLT_MAX
 from libc.stdlib cimport malloc, free
 
 DEF FixedLag = 10
-DEF NoParticles = 3000
+DEF NoParticles = 500
 DEF NoObs = 726
 DEF PI = 3.1415
 
@@ -81,8 +81,8 @@ def bpf_sv(double [:] obs, double mu, double phi, double sigmav, double rho):
 
         # Propagate particles
         for j in range(NoParticles):
-            mean = mu + phi * (particles[i + ancestors[j] * NoObs] - mu)
-            mean += sigmav * rho * exp(-0.5 * particles[i + ancestors[j] * NoObs]) * obs[i]
+            mean = mu + phi * (particles[i - 1 + ancestors[j] * NoObs] - mu)
+            mean += sigmav * rho * exp(-0.5 * particles[i + ancestors[j] * NoObs]) * obs[i - 1]
             stDev = sqrt(1.0 - rho * rho) * sigmav
             particles[i + j * NoObs] = mean + stDev * random_gaussian()
 
@@ -233,7 +233,7 @@ def flps_sv(double [:] obs, double mu, double phi, double sigmav, double rho):
         # Propagate particles
         for j in range(NoParticles):
             mean = mu + phi * (particles[i - 1 + ancestors[j] * NoObs] - mu)
-            mean += sigmav * rho * exp(-0.5 * particles[i - 1 + ancestors[j] * NoObs]) * obs[i]
+            mean += sigmav * rho * exp(-0.5 * particles[i - 1 + ancestors[j] * NoObs]) * obs[i - 1]
             stDev = sqrt(rho_term) * sigmav
             particles[i + j * NoObs] = mean + stDev * random_gaussian()
             particle_history[0 + j * FixedLag] = particles[i + j * NoObs]
@@ -267,15 +267,15 @@ def flps_sv(double [:] obs, double mu, double phi, double sigmav, double rho):
                 smo_state_est[i - FixedLag + 1] += weights[i + j * NoObs] * curr_particle
 
                 state_quad_term = next_particle - mu - phi * (curr_particle - mu)
-                state_quad_term -= sigmav * rho * exp(-0.5 * curr_particle) * obs[i - FixedLag + 1]
+                state_quad_term -= sigmav * rho * exp(-0.5 * curr_particle) * obs[i - FixedLag]
 
                 sub_gradient[0] = q_matrix * state_quad_term * (1.0 - phi)
                 sub_gradient[1] = q_matrix * state_quad_term * (curr_particle - mu) * (1.0 - phi**2)
                 sub_gradient[2] = q_matrix * state_quad_term * state_quad_term - 1.0
-                sub_gradient[2] += q_matrix * state_quad_term * sigmav * rho * exp(-0.5 * curr_particle) * obs[i - FixedLag + 1]
+                sub_gradient[2] += q_matrix * state_quad_term * sigmav * rho * exp(-0.5 * curr_particle) * obs[i - FixedLag]
                 sub_gradient[3] = rho
                 sub_gradient[3] -= q_matrix * rho * state_quad_term * state_quad_term
-                sub_gradient[3] += q_matrix * state_quad_term * sigmav * exp(-0.5 * curr_particle) * obs[i - FixedLag + 1] * rho_term
+                sub_gradient[3] += q_matrix * state_quad_term * sigmav * exp(-0.5 * curr_particle) * obs[i - FixedLag] * rho_term
 
                 gradient[0][i - FixedLag + 1] += sub_gradient[0] * weights[i + j * NoObs]
                 gradient[1][i - FixedLag + 1] += sub_gradient[1] * weights[i + j * NoObs]
@@ -295,15 +295,15 @@ def flps_sv(double [:] obs, double mu, double phi, double sigmav, double rho):
             if (idx - 1) >= 0:
                 next_particle = particle_history[idx - 1 + j * FixedLag]
                 state_quad_term = next_particle - mu - phi * (curr_particle - mu)
-                state_quad_term -= sigmav * rho * exp(-0.5 * curr_particle) * obs[i]
+                state_quad_term -= sigmav * rho * exp(-0.5 * curr_particle) * obs[i - 1]
 
                 sub_gradient[0] = q_matrix * state_quad_term * (1.0 - phi)
                 sub_gradient[1] = q_matrix * state_quad_term * (curr_particle - mu) * (1.0 - phi**2)
                 sub_gradient[2] = q_matrix * state_quad_term * state_quad_term - 1.0
-                sub_gradient[2] += q_matrix * state_quad_term * sigmav * rho * exp(-0.5 * curr_particle) * obs[i]
+                sub_gradient[2] += q_matrix * state_quad_term * sigmav * rho * exp(-0.5 * curr_particle) * obs[i - 1]
                 sub_gradient[3] = rho
                 sub_gradient[3] -= q_matrix * rho * state_quad_term * state_quad_term
-                sub_gradient[3] += q_matrix * state_quad_term * sigmav * exp(-0.5 * curr_particle) * obs[i] * rho_term
+                sub_gradient[3] += q_matrix * state_quad_term * sigmav * exp(-0.5 * curr_particle) * obs[i - 1] * rho_term
 
                 gradient[0][i - FixedLag + 1] += sub_gradient[0] * weights[i + j * NoObs]
                 gradient[1][i - FixedLag + 1] += sub_gradient[1] * weights[i + j * NoObs]
