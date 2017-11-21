@@ -14,9 +14,9 @@ def run(cython_code=False, save_to_file=False):
     # System model
     sys_model = StochasticVolatilityModelLeverage()
     sys_model.params['mu'] = 1.4
-    sys_model.params['phi'] = 0.9
+    sys_model.params['phi'] = 0.75
     sys_model.params['sigma_v'] = 0.6
-    sys_model.params['rho'] = 0.0
+    sys_model.params['rho'] = -0.4
     sys_model.initial_state = 0.0
 
     # sys_model.import_data_quandl(handle="NASDAQOMX/OMXS30",
@@ -163,7 +163,6 @@ def run(cython_code=False, save_to_file=False):
     for i in range(len(grid_rho)):
         for j in range(no_reps):
             sys_model.store_params(grid_rho[i])
-            print(sys_model)
             pf.smoother(sys_model)
             log_like_rho[i, j] = pf.results['log_like']
             gradient_rho[i, j] = pf.results['gradient_internal'].flatten()
@@ -172,8 +171,6 @@ def run(cython_code=False, save_to_file=False):
             nat_gradient_rho[i, j] /= pf.results['hessian_internal'].flatten()
             print("Grid point: {}/{} and iteration {}/{}".format(i,
                   len(grid_rho), j, no_reps))
-            print(log_like_rho[i, j])
-            print(nat_gradient_rho[i, j])
 
     # Plotting
     if not save_to_file:
