@@ -2,6 +2,7 @@ setwd("~/src/qnmh-sysid2018/r")
 library("jsonlite")
 source("diagnostics/helper_plotting.R")
 
+indexToPlot <- 10
 algorithms <- list.dirs("../results/example2/", full.names = FALSE)[-1]
 algorithms <- algorithms[grepl(indexToPlot, algorithms)]
 

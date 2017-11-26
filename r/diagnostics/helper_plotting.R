@@ -79,7 +79,7 @@ helper_plotting <- function(data, result, settings, algorithm, noItersToPlot,
   
   text(x, y1, pos=2, labels=algorithm)
   text(x, y2, pos=2, labels=paste("acc. prob:", round(mean(result$accepted), 2)))
-  text(x, y3, pos=2, labels=paste("frac. hess. corr:", round(result$no_hessians_corrected/noIters, 2)))
+  text(x, y3, pos=2, labels=paste("frac. hess. corr:", round(result$no_hessians_corrected/settings$no_iters, 2)))
 
   #---------------------------------------------------------------------------
   # Log-volatility

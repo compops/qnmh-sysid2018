@@ -6,7 +6,7 @@ algorithms <- list.dirs("../results/example3/", full.names = FALSE)[-1]
 
 offset <- c(0)
 noItersToPlot <- 200
-savePlotToFile <- FALSE
+savePlotToFile <- TRUE
 paramsScale <- c(0.0, 2.5, 0.85, 1.0, 0.2, 0.7, -0.2, 0.2)
 
 for (i in 1:length(algorithms)) {

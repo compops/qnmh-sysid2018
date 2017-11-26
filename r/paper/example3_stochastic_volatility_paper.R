@@ -11,6 +11,7 @@ offset <- c(0)
 noItersToPlot <- 350
 savePlotToFile <- TRUE
 paramsScale <- c(0.5, 2.5, 0.85, 1.0, 0.3, 0.7, -0.3, 0.3)
+histPosteriorScale <- c(2.0, 25, 9, 7)
 
 algorithm <- "example3_qmh_bfgs"
 
@@ -160,6 +161,7 @@ for (k in 1:4) {
     ylab = "posterior estimate",
     main = "",
     xlim = paramsScale[k, ],
+    ylim = c(0, histPosteriorScale[k]),
     freq = FALSE,
     cex.axis = 1.5,
     cex.lab = 1.5
