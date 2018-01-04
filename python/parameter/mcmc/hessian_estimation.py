@@ -1,3 +1,21 @@
+###############################################################################
+#    Constructing Metropolis-Hastings proposals using damped BFGS updates
+#    Copyright (C) 2018  Johan Dahlin < uni (at) johandahlin [dot] com >
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+###############################################################################
+
 """Helpers for computing Hessians for the use in the proposal distribution
 of Metropolis-Hastings algorithms."""
 
@@ -26,7 +44,7 @@ def get_hessian(mcmc, state_estimator, prop_gradient=None):
 
             mcmc.settings['step_size']**2 * mcmc.settings['base_hessian']
 
-        otherwise the estimate is computed using BFGS or SR1 updates and
+        otherwise the estimate is computed using BFGS updates and
         corrected using some method if the estimate is not positive semi-
         definite. See the documentation for quasi_newton and correct_hessian
         for more information about this.

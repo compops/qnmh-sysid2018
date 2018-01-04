@@ -1,3 +1,21 @@
+###############################################################################
+#    Constructing Metropolis-Hastings proposals using damped BFGS updates
+#    Copyright (C) 2018  Johan Dahlin < uni (at) johandahlin [dot] com >
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+###############################################################################
+
 """Script for reproducing example 3 in paper."""
 import numpy as np
 import scripts_draft1.helper_stochastic_volatility as mh
@@ -34,8 +52,6 @@ def main(seed_offset=0):
                    'qn_memory_length': 20,
                    'qn_strategy': None,
                    'qn_bfgs_curvature_cond': 'damped',
-                   'qn_sr1_safe_parameterisation': False,
-                   'qn_sr1_skip_limit': 1e-8,
                    'qn_initial_hessian': 'scaled_gradient',
                    'qn_initial_hessian_scaling': 0.01,
                    'qn_initial_hessian_fixed': np.eye(4) * 0.01**2,

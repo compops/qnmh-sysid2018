@@ -1,3 +1,21 @@
+###############################################################################
+#    Constructing Metropolis-Hastings proposals using damped BFGS updates
+#    Copyright (C) 2018  Johan Dahlin < uni (at) johandahlin [dot] com >
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+###############################################################################
+
 """Metropolis-Hastings algorithm."""
 import warnings
 import numpy as np
@@ -15,8 +33,6 @@ from parameter.mcmc.output import print_greeting
 from parameter.mcmc.performance_measures import compute_ess
 from parameter.mcmc.performance_measures import compute_iact
 from parameter.mcmc.performance_measures import compute_sjd
-
-from parameter.mcmc.variance_reduction import zero_variance_linear
 
 from parameter.mcmc.gradient_estimation import get_gradient
 from parameter.mcmc.gradient_estimation import get_nat_gradient
@@ -88,8 +104,7 @@ class MetropolisHastings(BaseParameterInference):
                 'hessian_estimate': how should the Hessian be estimated:
                                     None: base_hessian is used
                                     'segal_weinstein': Segal Weinstein is used.
-                                    'quasi_newton': BFGS or SR1 is used.
-                                    [This is set automatically by alg_type]
+                                    'quasi_newton': BFGS is used.
 
                 'hessian_correction': how should the Hessian be corrected.
                                       see _correct_hessian for more information.
@@ -107,10 +122,6 @@ class MetropolisHastings(BaseParameterInference):
                 'qn_strategy': See quasi_newton.main.quasi_newton
 
                 'qn_bfgs_curvature_cond': See quasi_newton.main.quasi_newton
-
-                'qn_sr1_safe_parameterisation': See quasi_newton.main.quasi_newton
-
-                'qn_sr1_skip_limit': See quasi_newton.main.quasi_newton
 
                 'qn_initial_hessian_scaling': See quasi_newton.main.quasi_newton
 
@@ -138,8 +149,6 @@ class MetropolisHastings(BaseParameterInference):
                          'qn_strategy': None,
                          'qn_memory_length': 20,
                          'qn_bfgs_curvature_cond': 'damped',
-                         'qn_sr1_safe_parameterisation': False,
-                         'qn_sr1_skip_limit': 1e-8,
                          'qn_initial_hessian': 'fixed',
                          'qn_initial_hessian_scaling': 0.10,
                          'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
@@ -168,8 +177,6 @@ class MetropolisHastings(BaseParameterInference):
             self.settings['hessian_estimate'] = 'quasi_newton'
             if self.settings['qn_strategy'] is None:
                 raise ValueError("No quasi-Newton strategy selected...")
-            elif self.settings['qn_strategy'] is 'sr1':
-                print("Hessian estimation using SR1 update.")
             elif self.settings['qn_strategy'] is 'bfgs':
                 print("Hessian estimation using BFGS update.")
             else:
@@ -438,7 +445,7 @@ class MetropolisHastings(BaseParameterInference):
                                          log_prop_diff + log_jacob_diff)
                 except:
                     if self.settings['verbose']:
-                        print("Accepted as overflow occured...")
+                        print("Accepted as overflow occurred...")
                     accept_prob = 1.0
 
                 if self.settings['trust_region_size']:
@@ -510,4 +517,3 @@ class MetropolisHastings(BaseParameterInference):
     compute_ess = compute_ess
     compute_iact = compute_iact
     compute_sjd = compute_sjd
-    zero_variance_linear = zero_variance_linear

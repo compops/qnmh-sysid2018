@@ -70,8 +70,6 @@ mh_settings = {'no_iters': 10000,
                'qn_initial_hessian': 'scaled_gradient',
                'qn_strategy': None,
                'qn_bfgs_curvature_cond': 'damped',
-               'qn_sr1_safe_parameterisation': False,
-               'qn_sr1_skip_limit': 1e-8,
                'qn_initial_hessian_scaling': 0.01,
                'qn_initial_hessian_fixed': np.eye(3) * 0.01**2,
                'qn_only_accepted_info': True,
@@ -117,7 +115,6 @@ An overview of the file structure of the code base is found below.
 * **parameter/** contains the MH algorithm and quasi-Newton methods for estimating the Hessian.
 * **scripts/** contains helper scripts for the examples in the paper.
 * **state/** contains the code for the Kalman filter/smoother, bootstrap particle filter and fixed-lag particle smoother. This code is quite general and should work for most scalar state space models. Cython versions are also available for the linear Gaussian and stochastic volatility models.
-* **tests/** contains test scripts to validate the implementation. These are largely undocumented.
 
 ## Modifying the code for other models
 This code is fairly general and can be used for inference in any state space model expressed by densities and with a scalar state. The main alteration required for using multivariate states is to rewrite the particle vector, propagation step and weighting step in the particle filter and smoother. As well as the standard generalisation of the Kalman filter and smoother.
@@ -127,10 +124,6 @@ The models are defined by files in models/. To implement a new model you can alt
 In the paper, all model parameters are unrestricted and can assume any real value in the MH algorithm. This is enabled by reparametersing the model, which is always recommended for MH algorithms. This results in that the reparameterisation must be encoded in the methods `transform_params_to_free` and `transform_params_from_free`, where free parameters are the unrestricted versions. This also introduces a Jacobian factor into the acceptance probability encoded by `log_jacobian` as well as extra terms in the gradients and Hessians of both the log joint distribution of states and observations as well as the log priors. Please take good care when performing this calculations. For an example, see the supplementary material to the, which contains the required computations for the linear Gaussian state space model.
 
 ### Calibration of user settings
-
 Furthermore, some alterations are probably required to the settings used in the quasi-Newton algorithm such as initial guess of the Hessian, a standard step length, memory length, etc.
 
 Please, let me know if you need any help with this and I will try my best to sort it out.
-
-
-

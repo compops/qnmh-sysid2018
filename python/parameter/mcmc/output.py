@@ -1,3 +1,21 @@
+###############################################################################
+#    Constructing Metropolis-Hastings proposals using damped BFGS updates
+#    Copyright (C) 2018  Johan Dahlin < uni (at) johandahlin [dot] com >
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+###############################################################################
+
 """Helpers for displaying and storing results from MCMC algorithms."""
 import sys
 import copy
@@ -6,7 +24,6 @@ import time
 import numpy as np
 import matplotlib.pylab as plt
 
-from helpers.database import db_insert_results
 from helpers.file_system import write_to_json
 from palettable.colorbrewer.qualitative import Dark2_8
 
@@ -203,26 +220,3 @@ def store_results_to_file(mcmc, output_path=None, sim_name=None, sim_desc=None):
     write_to_json(data, output_path, sim_name, 'data.json')
     write_to_json(settings, output_path, sim_name, 'settings.json')
     write_to_json(desc, output_path, sim_name, 'description.txt')
-
-def store_results_to_db(mcmc, collection=None, sim_name=None, sim_desc=None):
-    """ Stores the output from a run of the MH algorithm to a Mongo database.
-
-        Compiles the information form the MH algorithm, the settings and
-        the data and writes everything as JSON to file.
-
-        Args:
-            collection: handle for a collection in the Mongo database.
-            sim_name: a name for the simulation. (string)
-            sim_desc: a description of the simulation. (string)
-
-        Returns:
-            Nothing.
-
-    """
-    if collection is None:
-        raise ValueError("No Mongo Database collection given...")
-
-    mcout, data, settings = compile_results(mcmc, sim_name=sim_name,
-                                            sim_desc=sim_desc)
-
-    db_insert_results(collection, post_name, output=None, data=None, settings=None)
