@@ -27,7 +27,6 @@ from helpers.cov_matrix import is_valid_covariance_matrix
 from parameter.mcmc.output import plot_results
 from parameter.mcmc.output import print_progress_report
 from parameter.mcmc.output import store_results_to_file
-from parameter.mcmc.output import store_results_to_db
 from parameter.mcmc.output import print_greeting
 
 from parameter.mcmc.performance_measures import compute_ess
@@ -512,7 +511,6 @@ class MetropolisHastings(BaseParameterInference):
     # Wrappers
     plot = plot_results
     print_progress_report = print_progress_report
-    save_to_db = store_results_to_db
     save_to_file = store_results_to_file
     compute_ess = compute_ess
     compute_iact = compute_iact
