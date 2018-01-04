@@ -1,6 +1,6 @@
 """Script for reproducing example 3 in paper."""
 import numpy as np
-import scripts_draft1.helper_stochastic_volatility_leverage as mh
+import scripts_draft1.helper_stochastic_volatility as mh
 
 def main(seed_offset=0):
     """Runs the experiment."""
