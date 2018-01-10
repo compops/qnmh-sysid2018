@@ -166,17 +166,17 @@ for (k in 1:4) {
     cex.axis = 1.5,
     cex.lab = 1.5
   )
-  
+
   # Add lines for the kernel density estimate of the posterior
   kde <- density(paramsTrace[, k],
                  kernel = "e",
                  from = paramsScale[k, 1],
                  to = paramsScale[k, 2])
   lines(kde, lwd = 2, col = plotColors[k + 2])
-  
+
   # Plot the estimate of the posterior mean
   abline(v = paramsEstMean[k], lwd = 2, lty = "dotted")
-  
+
   # Add lines for prior
   prior_grid <- seq(paramsScale[k, 1], paramsScale[k, 2], 0.01)
   if (k == 1) {
@@ -190,9 +190,9 @@ for (k in 1:4) {
   }
   if (k == 4) {
     prior_values = dnorm(prior_grid, 0.0, 1.0)
-  }  
+  }
   lines(prior_grid, prior_values, col = "darkgrey", lwd = 3)
-  
+
 }
 
 if (savePlotToFile) {

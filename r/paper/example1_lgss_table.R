@@ -3,7 +3,7 @@ library("jsonlite")
 library("xtable")
 options(xtable.floating = FALSE)
 options(xtable.timestamp = "")
-source("helper_table.R")
+source("paper/helper_table.R")
 
 algorithms <- c("mh0pre", "mh1pre", "mh2sw", "mh_bfgs")
 bfgs_variants <- c("ignore_flip", "ignore_reg", "ignore_replace", "enforce_replace")
@@ -14,13 +14,13 @@ output <- array(0, dim = c(8, noSimulations, noAlgorithms))
 
 for (i in 1:(noAlgorithms)) {
   for (j in 1:noSimulations) {
-    
+
     if (i < 5) {
       algorithm <- paste("example1", paste(algorithms[i], j-1, sep="_"), sep="_")
     } else {
       algorithm <- paste(paste("example1", paste(algorithms[4], j-1, sep="_"), sep="_"), bfgs_variants[i-4], sep="_")
     }
-    
+
     data <- read_json(paste("../results/example1/",
                             paste(algorithm, "/data.json.gz", sep=""),
                             sep=""),
@@ -33,10 +33,10 @@ for (i in 1:(noAlgorithms)) {
                                 paste(algorithm, "/settings.json.gz", sep=""),
                                 sep=""),
                           simplifyVector = TRUE)
-    
+
     output[, j, i] <- helper_table(data, result, settings)
     print(output[, j, i])
-  }    
+  }
 }
 
 medianOutput <- matrix(0, nrow = noAlgorithms, ncol = 6)

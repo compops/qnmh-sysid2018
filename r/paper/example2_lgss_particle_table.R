@@ -14,13 +14,13 @@ output <- array(0, dim = c(8, noSimulations, noAlgorithms))
 
 for (i in 1:(noAlgorithms)) {
   for (j in 1:noSimulations) {
-    
+
     if (i < 4) {
       algorithm <- paste("example2", paste(algorithms[i], j-1, sep="_"), sep="_")
     } else {
       algorithm <- paste(paste("example2", paste(algorithms[3], j-1, sep="_"), sep="_"), bfgs_variants[i-3], sep="_")
     }
-    
+
     data <- read_json(paste("results/example2/",
                             paste(algorithm, "/data.json.gz", sep=""),
                             sep=""),
@@ -33,10 +33,10 @@ for (i in 1:(noAlgorithms)) {
                                 paste(algorithm, "/settings.json.gz", sep=""),
                                 sep=""),
                           simplifyVector = TRUE)
-    
+
     output[, j, i] <- helper_table(data, result, settings)
     print(output[, j, i])
-  }    
+  }
 }
 
 medianOutput <- matrix(0, nrow = noAlgorithms, ncol = 6)
