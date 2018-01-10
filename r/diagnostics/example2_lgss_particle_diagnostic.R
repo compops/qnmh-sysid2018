@@ -1,12 +1,13 @@
-setwd("~/src/qnmh-sysid2018/r")
+
+setwd("~/src/qnmh-sr1/r")
 library("jsonlite")
 source("diagnostics/helper_plotting.R")
 
-indexToPlot <- 10
+indexToPlot <- 1
 algorithms <- list.dirs("../results/example2/", full.names = FALSE)[-1]
 algorithms <- algorithms[grepl(indexToPlot, algorithms)]
 
-noItersToPlot <- 200
+noItersToPlot <- 3500
 savePlotToFile <- TRUE
 paramsScale <- c(0.0, 0.6, 0.3, 0.8, 0.8, 1.2)
 
