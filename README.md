@@ -1,7 +1,7 @@
 # Constructing Metropolis-Hastings proposals using damped BFGS updates
 This code was downloaded from https://github.com/compops/qnmh-sysid2018 and contains the code and data used to produce the results in the paper:
 
-J. Dahlin, A. Wills and B. Ninness, Constructing Metropolis-Hastings proposals using damped BFGS updates. Pre-print, arXiv:1801:01243, 2018.
+J. Dahlin, A. Wills and B. Ninness, **Constructing Metropolis-Hastings proposals using damped BFGS updates**. Proceedings of the 18th IFAC Symposium on System Identification, Stockholm, Sweden, July 2018.
 
 The paper is available as a preprint from https://arxiv.org/abs/1801.01243.
 
@@ -13,13 +13,13 @@ A simple method to reproduce the results is to make use of the Docker container 
 
 First, you need to download and installer Docker on your OS. Please see https://docs.docker.com/engine/installation/ for instructions on how to do this. Secondly, you can run the Docker container by running the command
 ``` bash
-docker run --name qnmh-sysid2018-run compops/qnmh-sysid2018:draft1
+docker run --name qnmh-sysid2018-run compops/qnmh-sysid2018:final
 ```
 This will download the code and execute it on your computer. The progress will be printed to the screen. Note that the runs will take a day or two to complete. Thirdly, The results can then be access by
 ``` bash
 docker cp qnmh-sysid2018-run:/app/qnmh-sysid2018-results.tgz .
 ```
-which copies a tarball of the results into the current folder. To reproduce the plots from the paper, uncompress the tarball and move the contents of the results folder into a folder called results in a cloned version of the GitHub repository. Follow the instruction for the R code to create pdf versions of the plots.
+which copies a tarball of the results into the current folder. To reproduce the plots from the paper, extract the tarball and move the contents of the results folder into a folder called results in a cloned version of the GitHub repository. Follow the instruction for the R code to create pdf versions of the plots.
 
 ## R code (r/)
 This code is used to generate diagnostic plot as well as plots and table for the paper. See the `README.md` file for more information.
