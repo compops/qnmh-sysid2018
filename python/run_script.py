@@ -1,8 +1,8 @@
 import sys
 
-import scripts_draft1.example1_lgss_kalman as example1
-import scripts_draft1.example2_lgss_particles as example2
-import scripts_draft1.example3_stochastic_volatility as example3
+import scripts.example1_lgss_kalman as example1
+import scripts.example2_lgss_particles as example2
+import scripts.example3_stochastic_volatility as example3
 
 if len(sys.argv) > 1:
     if int(sys.argv[1]) == 1:

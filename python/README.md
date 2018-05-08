@@ -19,10 +19,10 @@ python setup.py build_ext --inplace
 to compile this code. The number of particles and observations are hard-coded into the C-code due to the use of static arrays for speed. To change this, open the file corresponding to the model of interest and change the constants `NoParticles` and `NoObs` in the beginning of the file. Note that `NoObs` is T+1 (as we include the unknown initial state).
 
 ### Request Quandl API key
-The run of example 3 requires that data is collected from Quandl for each simulation as due to Copyright reasons this data cannot be distributed along the source code. Quandl limits the number of data requests without a API key to 50 per day. Therefore it is advisable to register at Quandl and to enter you own API key in the file `python/scripts_draft1/helper_stochastic_volatility.py`.
+The run of example 3 requires that data is collected from Quandl for each simulation as due to Copyright reasons this data cannot be distributed along the source code. Quandl limits the number of data requests without a API key to 50 per day. Therefore it is advisable to register at Quandl and to enter you own API key in the file `python/scripts/helper_stochastic_volatility.py`.
 
 ## Reproducing the results in the paper
-The results in the paper can be reproduced by running the scripts found in the folder `scripts_draft1/`. Here, we discuss each of the three examples in details and provide some additional supplementary details, which are not covered in the paper. The results from each script is saved in the folder `results/` under sub-folders corresponding to the three different examples.
+The results in the paper can be reproduced by running the scripts found in the folder `scripts/`. Here, we discuss each of the three examples in details and provide some additional supplementary details, which are not covered in the paper. The results from each script is saved in the folder `results/` under sub-folders corresponding to the three different examples.
 
 Examples 1 and 2 are repeated using different random seeds 25 times in a Monte Carlo simulation. The simplest way to execute these is to call the script `run_script.sh`, which will run all the experiments (note that this will take at least a day). Another way to execute a single experiment is to call
 

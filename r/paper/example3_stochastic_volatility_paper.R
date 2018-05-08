@@ -10,8 +10,8 @@ algorithms <-
 offset <- c(0)
 noItersToPlot <- 350
 savePlotToFile <- TRUE
-paramsScale <- c(0.5, 2.5, 0.85, 1.0, 0.3, 0.7, -0.3, 0.3)
-histPosteriorScale <- c(2.0, 25, 9, 7)
+paramsScale <- c(0, 3, 0.85, 1.0, 0.0, 0.8, -0.3, 0.3)
+histPosteriorScale <- c(2.0, 35, 9, 7)
 
 algorithm <- "example3_qmh_bfgs"
 
@@ -70,10 +70,7 @@ layout(matrix(c(1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 5, 6), 3, 4, byrow = TRUE))
 par(mar = c(4, 5, 1, 1))
 
 # Observations
-grid <-
-  seq(as.POSIXct("2015-11-07 01:00:00 CET"),
-      as.POSIXct("2017-11-01 01:00:00 CET"),
-      by = "1 day")
+grid <- seq(as.POSIXct("2015-11-06 01:00:00 CET"), as.POSIXct("2017-11-01 01:00:00 CET"), by = "1 day")
 plot(
   as.Date(grid),
   obs,
