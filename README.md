@@ -13,13 +13,13 @@ A simple method to reproduce the results is to make use of the Docker container 
 
 First, you need to download and installer Docker on your OS. Please see https://docs.docker.com/engine/installation/ for instructions on how to do this. Secondly, you can run the Docker container by running the command
 ``` bash
-docker run --name qnmh-sysid2018-run compops/qnmh-sysid2018:final
+docker run -v <<LOCALPATH>>:/app/results -e EXPERIMENT='<<EXPERIMENT_NUMBER>>' -e FULLRUN='<<FULL_RUN>>' --name qnmh-sysid2018-run compops/qnmh-sysid2018:final
 ```
-This will download the code and execute it on your computer. The progress will be printed to the screen. Note that the runs will take a day or two to complete. Thirdly, The results can then be access by
-``` bash
-docker cp qnmh-sysid2018-run:/app/qnmh-sysid2018-results.tgz .
-```
-which copies a tarball of the results into the current folder. To reproduce the plots from the paper, extract the tarball and move the contents of the results folder into a folder called results in a cloned version of the GitHub repository. Follow the instruction for the R code to create pdf versions of the plots.
+where `<<LOCALPATH>>` is replaced with a local path to where the results are to be stored, e.g., `/home/username/tmp` on a Linux computer. `<<EXPERIMENT_NUMBER>>` is replaced with either 1, 2 or 3 corresponding to the three experiments in the paper. `<<FULL_RUN>>` can be either 0 or 1. Selecting `0` runs only one experiment (for practical reasons) and `1` runs 25 Monte Carlo simulations just like in the paper.
+
+Note that running with the flag `-e EXPERIMENT='2' -e FULLRUN='1'`, i.e. the second experiments (LGSS model with particle methods) and 25 Monte Carlo runs will probably take around a day to complete.
+
+To reproduce the plots from the paper, move the contents of the results folder in `<<LOCALPATH>>` into a folder called results in a cloned version of the GitHub repository. Follow the instruction for the R code to create pdf versions of the plots. Note that the plot scripts are written for the case when `-e FULLRUN='1'` for the first and second example, which means that they might require some changes when running with `-e FULLRUN='0'`.
 
 ## R code (r/)
 This code is used to generate diagnostic plot as well as plots and table for the paper. See the `README.md` file for more information.
