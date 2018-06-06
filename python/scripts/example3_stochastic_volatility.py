@@ -18,7 +18,7 @@
 
 """Script for reproducing example 3 in paper."""
 import numpy as np
-import scripts_draft1.helper_stochastic_volatility as mh
+import scripts.helper_stochastic_volatility as mh
 
 def main(seed_offset=0):
     """Runs the experiment."""
@@ -58,6 +58,7 @@ def main(seed_offset=0):
                    'qn_only_accepted_info': True,
                    'qn_accept_all_initial': True
                    }
+
     mh_settings.update({'qn_strategy': 'bfgs'})
     sim_name = 'example3_qmh_bfgs'
     sim_desc = ('Damped BFGS for estimating Hessian. Scaling the initial ',
@@ -70,19 +71,6 @@ def main(seed_offset=0):
             sim_name=sim_name,
             sim_desc=sim_desc,
             seed_offset=seed_offset)
-
-
-    # mh_settings.update({'qn_strategy': 'sr1',
-    #                     'hessian_correction': 'replace'})
-    # sim_name = 'example3_qmh_sr1'
-    # sim_desc = ('..')
-    # mh.run('qmh',
-    #        mh_settings=mh_settings,
-    #        pf_settings=pf_settings,
-    #        sim_name=sim_name,
-    #        sim_desc=sim_desc,
-    #        seed_offset=seed_offset)
-
 
     return None
 

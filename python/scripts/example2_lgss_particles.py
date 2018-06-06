@@ -18,7 +18,7 @@
 
 """Script for reproducing example 2 in paper."""
 import numpy as np
-import scripts_draft1.helper_linear_gaussian as mh
+import scripts.helper_linear_gaussian as mh
 
 def main(seed_offset=0):
     """Runs the experiment."""

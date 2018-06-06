@@ -14,3 +14,10 @@ RUN pip install -r /app/python/requirements.txt
 
 # Run script on launch
 CMD bash ./run_script.sh
+
+# Build
+# docker build -t qnmh-sysid2018 .
+# docker images
+# docker tag <<TAG>> compops/qnmh-sysid2018:final
+# docker login --username=yourhubusername --email=youremail@provider.com
+# docker push compops/qnmh-sysid2018
