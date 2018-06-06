@@ -19,5 +19,6 @@ CMD bash ./run_script.sh
 # docker build -t qnmh-sysid2018 .
 # docker images
 # docker tag <<TAG>> compops/qnmh-sysid2018:final
+# docker tag <<TAG>> compops/qnmh-sysid2018:latest
 # docker login --username=yourhubusername --email=youremail@provider.com
 # docker push compops/qnmh-sysid2018
