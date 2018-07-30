@@ -30,4 +30,4 @@ if len(sys.argv) > 1:
     else:
         raise NameError("Unknown example.")
 else:
-    raise NameError("Need provide the experiment to run.")
+    raise NameError("Need to provide the experiment to run.")
